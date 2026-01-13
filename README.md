@@ -223,12 +223,12 @@ FamilyFeast uses a **Modified Borda Count** system to achieve consensus:
 - [x] Voting algorithm
 - [x] Basic UI components
 
-### Phase 2: Core Features (Current)
-- [ ] Complete recipe entry forms
-- [ ] Drag-and-drop calendar
-- [ ] AI recipe generation (full implementation)
-- [ ] Shopping list generation from meal plans
-- [ ] Budget tracking dashboard
+### Phase 2: Core Features ✅
+- [x] Complete recipe entry forms
+- [x] Drag-and-drop calendar
+- [x] AI recipe generation (scaffold complete, needs API integration)
+- [x] Shopping list generation from meal plans
+- [x] Budget tracking dashboard
 
 ### Phase 3: Polish
 - [ ] Recipe image upload and storage

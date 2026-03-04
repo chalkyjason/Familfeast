@@ -10,6 +10,7 @@ struct DashboardView: View {
     // MARK: - Properties
 
     let familyGroup: FamilyGroup?
+    @Binding var selectedTab: Int
 
     // MARK: - Queries
 
@@ -24,6 +25,8 @@ struct DashboardView: View {
     // MARK: - State
 
     @State private var showingNewSessionSheet = false
+    @State private var showingAddRecipe = false
+    @State private var showingAISuggestions = false
 
     // MARK: - Body
 
@@ -64,7 +67,7 @@ struct DashboardView: View {
                         Button(action: { showingNewSessionSheet = true }) {
                             Label("New Meal Session", systemImage: "plus.circle")
                         }
-                        Button(action: {}) {
+                        Button(action: { showingAddRecipe = true }) {
                             Label("Add Recipe", systemImage: "book")
                         }
                     } label: {
@@ -73,7 +76,15 @@ struct DashboardView: View {
                 }
             }
             .sheet(isPresented: $showingNewSessionSheet) {
-                NewMealSessionView(familyGroup: familyGroup)
+                if let group = familyGroup {
+                    CreateMealSessionView(familyGroup: group)
+                }
+            }
+            .sheet(isPresented: $showingAddRecipe) {
+                AddRecipeView(familyGroup: familyGroup)
+            }
+            .sheet(isPresented: $showingAISuggestions) {
+                AISuggestionsView(familyGroup: familyGroup)
             }
         }
     }
@@ -141,15 +152,17 @@ struct DashboardView: View {
                 }
             }
 
-            NavigationLink(destination: MealPlanningView(familyGroup: familyGroup)) {
-                Text("View Details")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.blue)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(.blue.opacity(0.1))
-                    .cornerRadius(10)
+            if let group = familyGroup {
+                NavigationLink(destination: MealPlanningView(familyGroup: group)) {
+                    Text("View Details")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(.blue.opacity(0.1))
+                        .cornerRadius(10)
+                }
             }
         }
         .padding()
@@ -165,7 +178,7 @@ struct DashboardView: View {
                 icon: "hand.thumbsup.fill",
                 color: .green
             ) {
-                // Navigate to voting
+                selectedTab = 2
             }
 
             QuickActionCard(
@@ -173,7 +186,7 @@ struct DashboardView: View {
                 icon: "plus.circle.fill",
                 color: .blue
             ) {
-                // Navigate to add recipe
+                showingAddRecipe = true
             }
 
             QuickActionCard(
@@ -181,7 +194,7 @@ struct DashboardView: View {
                 icon: "cart.fill",
                 color: .orange
             ) {
-                // Navigate to shopping
+                selectedTab = 3
             }
 
             QuickActionCard(
@@ -189,7 +202,7 @@ struct DashboardView: View {
                 icon: "sparkles",
                 color: .purple
             ) {
-                // Open AI suggestions
+                showingAISuggestions = true
             }
         }
     }
@@ -372,27 +385,9 @@ struct StatCard: View {
     }
 }
 
-// Placeholder for NewMealSessionView
-struct NewMealSessionView: View {
-    let familyGroup: FamilyGroup?
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            Text("Create New Meal Session")
-                .navigationTitle("New Session")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
-                    }
-                }
-        }
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
-    DashboardView(familyGroup: nil)
+    DashboardView(familyGroup: nil, selectedTab: .constant(0))
         .modelContainer(for: [FamilyGroup.self, MealSession.self, Recipe.self], inMemory: true)
 }

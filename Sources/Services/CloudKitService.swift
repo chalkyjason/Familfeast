@@ -8,42 +8,72 @@ actor CloudKitService {
 
     // MARK: - Properties
 
-    private let container: CKContainer
-    private let privateDatabase: CKDatabase
-    private let sharedDatabase: CKDatabase
+    private var _container: CKContainer?
+    // These are only accessed after _isAvailable guard, so force-unwrap is safe
+    private var container: CKContainer { _container! }
+    private var privateDatabase: CKDatabase { _container!.privateCloudDatabase }
+    private var sharedDatabase: CKDatabase { _container!.sharedCloudDatabase }
+
+    private var _isAvailable: Bool = false
+    var isAvailable: Bool { _isAvailable }
 
     // MARK: - Initialization
 
-    init(containerIdentifier: String = "iCloud.com.familyfeast.app") {
-        self.container = CKContainer(identifier: containerIdentifier)
-        self.privateDatabase = container.privateCloudDatabase
-        self.sharedDatabase = container.sharedCloudDatabase
+    init(containerIdentifier: String? = nil) {
+        // Do NOT create CKContainer here — it traps without entitlements.
+        // Container is created lazily on first successful ensureContainer() call.
+    }
+
+    /// Explicitly activate CloudKit — call only when you know entitlements are present.
+    /// Without calling this, all CloudKit methods will throw .notAuthenticated.
+    func activateCloudKit(identifier: String? = nil) {
+        guard _container == nil else { return }
+        if let id = identifier {
+            _container = CKContainer(identifier: id)
+        } else {
+            _container = CKContainer.default()
+        }
+        _isAvailable = true
     }
 
     // MARK: - Account Status
 
     /// Check if user is logged into iCloud
     func checkAccountStatus() async throws -> CKAccountStatus {
-        try await container.accountStatus()
+        guard _isAvailable else { throw CloudKitError.notAuthenticated }
+        return try await container.accountStatus()
     }
 
     /// Request application permission
     func requestApplicationPermission(_ permission: CKContainer.ApplicationPermissions) async throws -> CKContainer.ApplicationPermissionStatus {
-        try await container.applicationPermissionStatus(for: permission)
+        guard _isAvailable else { throw CloudKitError.notAuthenticated }
+        return try await container.applicationPermissionStatus(for: permission)
     }
 
     // MARK: - User Identity
 
     /// Fetch current user record ID
     func fetchUserRecordID() async throws -> CKRecord.ID {
-        try await container.userRecordID()
+        guard _isAvailable else { throw CloudKitError.notAuthenticated }
+        return try await container.userRecordID()
     }
 
     /// Fetch user identity
     func fetchUserIdentity() async throws -> CKUserIdentity? {
         let recordID = try await fetchUserRecordID()
-        let identities = try await container.discoverAllIdentities()
-        return identities.first { $0.userRecordID == recordID }
+        let lookupInfo = CKUserIdentity.LookupInfo(userRecordID: recordID)
+        var foundIdentity: CKUserIdentity?
+        let operation = CKDiscoverUserIdentitiesOperation(userIdentityLookupInfos: [lookupInfo])
+        operation.userIdentityDiscoveredBlock = { identity, _ in
+            foundIdentity = identity
+        }
+        let semaphore = DispatchSemaphore(value: 0)
+        operation.discoverUserIdentitiesResultBlock = { _ in
+            semaphore.signal()
+        }
+        container.add(operation)
+        semaphore.wait()
+        return foundIdentity
     }
 
     // MARK: - Sharing
@@ -77,19 +107,41 @@ actor CloudKitService {
 
         let lookupInfo = CKUserIdentity.LookupInfo(emailAddress: email)
 
-        // Discover user identity
-        let identities = try await container.discoverUserIdentities(with: [lookupInfo])
+        // Discover user identity via operation
+        var foundIdentity: CKUserIdentity?
+        let operation = CKDiscoverUserIdentitiesOperation(userIdentityLookupInfos: [lookupInfo])
+        operation.userIdentityDiscoveredBlock = { identity, _ in
+            foundIdentity = identity
+        }
+        let semaphore = DispatchSemaphore(value: 0)
+        operation.discoverUserIdentitiesResultBlock = { _ in
+            semaphore.signal()
+        }
+        container.add(operation)
+        semaphore.wait()
 
-        guard let identity = identities.first else {
+        guard let identity = foundIdentity else {
             throw CloudKitError.userNotFound
         }
 
-        let participant = CKShare.Participant()
-        participant.userIdentity = identity
-        participant.permission = permission
-        participant.role = .privateUser
+        let fetchOp = CKFetchShareParticipantsOperation(userIdentityLookupInfos: [lookupInfo])
+        var fetchedParticipant: CKShare.Participant?
+        fetchOp.perShareParticipantResultBlock = { _, result in
+            if case .success(let participant) = result {
+                fetchedParticipant = participant
+            }
+        }
+        let sem2 = DispatchSemaphore(value: 0)
+        fetchOp.fetchShareParticipantsResultBlock = { _ in
+            sem2.signal()
+        }
+        container.add(fetchOp)
+        sem2.wait()
 
-        share.addParticipant(participant)
+        if let participant = fetchedParticipant {
+            participant.permission = permission
+            share.addParticipant(participant)
+        }
 
         // Save updated share
         let updatedShare = try await privateDatabase.save(share) as! CKShare

@@ -132,12 +132,22 @@ struct FamilySettingsView: View {
 
     private var preferencesSection: some View {
         Section("Preferences") {
-            NavigationLink(destination: Text("Dietary Restrictions")) {
-                Label("Dietary Restrictions", systemImage: "leaf")
-            }
+            if let group = familyGroup {
+                NavigationLink(destination: DietaryRestrictionsView(familyGroup: group)) {
+                    Label("Dietary Restrictions", systemImage: "leaf")
+                }
 
-            NavigationLink(destination: Text("Cuisine Preferences")) {
-                Label("Cuisine Preferences", systemImage: "globe")
+                NavigationLink(destination: CuisinePreferencesView(familyGroup: group)) {
+                    Label("Cuisine Preferences", systemImage: "globe")
+                }
+            } else {
+                NavigationLink(destination: Text("Dietary Restrictions")) {
+                    Label("Dietary Restrictions", systemImage: "leaf")
+                }
+
+                NavigationLink(destination: Text("Cuisine Preferences")) {
+                    Label("Cuisine Preferences", systemImage: "globe")
+                }
             }
 
             NavigationLink(destination: Text("Budget Settings")) {

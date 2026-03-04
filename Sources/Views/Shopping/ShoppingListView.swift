@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+#if os(iOS)
+import UIKit
+#endif
 
 struct ShoppingListView: View {
 
@@ -214,8 +217,10 @@ struct ShoppingListView: View {
         item.toggle()
 
         // Haptic feedback
+        #if os(iOS)
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
+        #endif
 
         do {
             try modelContext.save()
@@ -297,8 +302,15 @@ struct CreateShoppingListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    @Query(sort: \MealSession.startDate, order: .reverse)
+    private var mealSessions: [MealSession]
+
     @State private var listName = ""
     @State private var storeName = ""
+
+    private var finalizedSessions: [MealSession] {
+        mealSessions.filter { $0.status == .finalized || $0.status == .active }
+    }
 
     var body: some View {
         NavigationStack {
@@ -310,8 +322,9 @@ struct CreateShoppingListView: View {
 
                 Section("Generate From") {
                     Button("Current Meal Plan") {
-                        // Generate from meal plan
+                        createFromMealPlan()
                     }
+                    .disabled(finalizedSessions.isEmpty)
 
                     Button("Start Empty") {
                         createEmptyList()
@@ -324,6 +337,29 @@ struct CreateShoppingListView: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+        }
+    }
+
+    private func createFromMealPlan() {
+        guard let session = finalizedSessions.first else { return }
+
+        let list = ShoppingList.createFrom(mealSession: session, context: modelContext)
+
+        if !listName.isEmpty {
+            list.name = listName
+        }
+        if !storeName.isEmpty {
+            list.store = storeName
+        }
+        list.familyGroup = familyGroup
+
+        modelContext.insert(list)
+
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            print("Failed to create list from meal plan: \(error)")
         }
     }
 

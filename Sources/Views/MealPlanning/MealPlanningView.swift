@@ -21,6 +21,7 @@ struct MealPlanningView: View {
     @State private var selectedSession: MealSession?
     @State private var showingNewSession = false
     @State private var showingVoting = false
+    @State private var currentMember: FamilyMember?
 
     // MARK: - Body
 
@@ -67,9 +68,19 @@ struct MealPlanningView: View {
         .sheet(isPresented: $showingNewSession) {
             CreateMealSessionView(familyGroup: familyGroup)
         }
+        .sheet(isPresented: $showingVoting) {
+            if let session = selectedSession, let member = currentMember {
+                NavigationStack {
+                    VotingSessionView(mealSession: session, currentMember: member)
+                }
+            }
+        }
         .onAppear {
             if selectedSession == nil {
                 selectedSession = activeMealSession
+            }
+            if currentMember == nil {
+                currentMember = familyGroup.members?.first
             }
         }
     }
@@ -168,6 +179,18 @@ struct MealPlanningView: View {
                     .background(.green.gradient)
                     .cornerRadius(12)
             }
+
+            if let votes = session.votes, !votes.isEmpty {
+                Button(action: { finalizeSession(session) }) {
+                    Text("Finalize Votes")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.purple.gradient)
+                        .cornerRadius(12)
+                }
+            }
         }
         .padding()
         .background(.green.opacity(0.1))
@@ -202,10 +225,48 @@ struct MealPlanningView: View {
 
             if let recipes = session.candidateRecipes {
                 ForEach(recipes) { recipe in
-                    CandidateRecipeCard(recipe: recipe, votes: session.votes ?? [])
+                    VStack(spacing: 0) {
+                        CandidateRecipeCard(recipe: recipe, votes: session.votes ?? [])
+
+                        let conflicts = dietaryConflicts(for: recipe, in: familyGroup)
+                        if !conflicts.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                    .font(.caption)
+                                Text(conflicts.joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.orange.opacity(0.1))
+                            .cornerRadius(8)
+                            .padding(.top, 4)
+                        }
+                    }
                 }
             }
         }
+    }
+
+    /// Check recipe against family members' allergens and dietary restrictions
+    private func dietaryConflicts(for recipe: Recipe, in group: FamilyGroup) -> [String] {
+        guard let members = group.members else { return [] }
+
+        var conflicts: [String] = []
+        let recipeText = (recipe.title + " " + (recipe.recipeDescription ?? "") + " " + recipe.tags.joined(separator: " ")).lowercased()
+
+        for member in members {
+            for allergen in member.allergens {
+                if recipeText.contains(allergen.lowercased()) {
+                    conflicts.append("\(member.displayName): \(allergen)")
+                }
+            }
+        }
+
+        return conflicts
     }
 
     private var emptyStateView: some View {
@@ -240,6 +301,42 @@ struct MealPlanningView: View {
 
     private var activeMealSession: MealSession? {
         mealSessions.first { $0.status == .active || $0.status == .voting }
+    }
+
+    // MARK: - Methods
+
+    private func finalizeSession(_ session: MealSession) {
+        guard let candidates = session.candidateRecipes,
+              let votes = session.votes else { return }
+
+        let winners = VotingAlgorithm.smartSelection(
+            recipes: candidates,
+            votes: votes,
+            count: session.numberOfMeals,
+            budgetLimit: session.budgetLimit,
+            preferVariety: true
+        )
+
+        // Spread scheduled meals across the date range
+        let totalDays = max(1, Calendar.current.dateComponents([.day], from: session.startDate, to: session.endDate).day ?? 1)
+        let interval = max(1, totalDays / max(1, winners.count))
+
+        for (index, recipe) in winners.enumerated() {
+            let mealDate = Calendar.current.date(byAdding: .day, value: index * interval, to: session.startDate) ?? session.startDate
+            let scheduledMeal = ScheduledMeal(scheduledDate: mealDate, mealType: .dinner)
+            scheduledMeal.recipe = recipe
+            scheduledMeal.mealSession = session
+            modelContext.insert(scheduledMeal)
+        }
+
+        session.status = .finalized
+        session.finalizedAt = Date()
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to finalize session: \(error)")
+        }
     }
 }
 
@@ -373,15 +470,44 @@ struct CandidateRecipeCard: View {
 
 struct CreateMealSessionView: View {
     let familyGroup: FamilyGroup
+
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+
+    @State private var name = ""
+    @State private var startDate = Date()
+    @State private var endDate = Date().addingTimeInterval(7 * 24 * 60 * 60)
+    @State private var numberOfMeals = 7
+    @State private var budgetLimit = ""
+    @State private var selectedRecipeIDs: Set<UUID> = []
+    @State private var showingRecipePicker = false
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Session Details") {
-                    TextField("Name", text: .constant("Week of Jan 15"))
-                    DatePicker("Start Date", selection: .constant(Date()), displayedComponents: .date)
-                    DatePicker("End Date", selection: .constant(Date().addingTimeInterval(7*24*60*60)), displayedComponents: .date)
+                    TextField("Name (e.g. Week of Jan 15)", text: $name)
+                    DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
+                    DatePicker("End Date", selection: $endDate, displayedComponents: .date)
+                }
+
+                Section("Meals") {
+                    Stepper("Number of meals: \(numberOfMeals)", value: $numberOfMeals, in: 1...21)
+                    TextField("Budget (optional, e.g. 150.00)", text: $budgetLimit)
+                        #if os(iOS)
+                        .keyboardType(.decimalPad)
+                        #endif
+                }
+
+                Section("Candidate Recipes") {
+                    Button(action: { showingRecipePicker = true }) {
+                        HStack {
+                            Text("Select Recipes")
+                            Spacer()
+                            Text("\(selectedRecipeIDs.count) selected")
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
             }
             .navigationTitle("New Meal Session")
@@ -390,9 +516,99 @@ struct CreateMealSessionView: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") { dismiss() }
+                    Button("Create") { createSession() }
                 }
             }
+            .sheet(isPresented: $showingRecipePicker) {
+                RecipePickerView(selectedRecipeIDs: $selectedRecipeIDs)
+            }
+        }
+    }
+
+    private func createSession() {
+        let sessionName = name.isEmpty ? "Week of \(startDate.formatted(date: .abbreviated, time: .omitted))" : name
+
+        let session = MealSession(
+            name: sessionName,
+            startDate: startDate,
+            endDate: endDate,
+            numberOfMeals: numberOfMeals
+        )
+
+        // Parse budget
+        if let budgetValue = Double(budgetLimit), budgetValue > 0 {
+            session.budgetLimit = Int(budgetValue * 100)
+        }
+
+        session.familyGroup = familyGroup
+
+        // Fetch selected recipes and attach as candidates
+        if !selectedRecipeIDs.isEmpty {
+            let allIDs = selectedRecipeIDs
+            var descriptor = FetchDescriptor<Recipe>()
+            descriptor.predicate = #Predicate<Recipe> { recipe in
+                allIDs.contains(recipe.id)
+            }
+            if let recipes = try? modelContext.fetch(descriptor) {
+                session.candidateRecipes = recipes
+                session.status = .voting
+            }
+        }
+
+        modelContext.insert(session)
+
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            print("Failed to create session: \(error)")
+        }
+    }
+}
+
+struct RecipePickerView: View {
+    @Binding var selectedRecipeIDs: Set<UUID>
+
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Recipe.title) private var recipes: [Recipe]
+
+    @State private var searchText = ""
+
+    private var filteredRecipes: [Recipe] {
+        if searchText.isEmpty { return recipes }
+        return recipes.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List(filteredRecipes) { recipe in
+                Button(action: { toggleRecipe(recipe) }) {
+                    HStack {
+                        RecipeRow(recipe: recipe)
+                        Spacer()
+                        if selectedRecipeIDs.contains(recipe.id) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            .searchable(text: $searchText, prompt: "Search recipes")
+            .navigationTitle("Select Recipes")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func toggleRecipe(_ recipe: Recipe) {
+        if selectedRecipeIDs.contains(recipe.id) {
+            selectedRecipeIDs.remove(recipe.id)
+        } else {
+            selectedRecipeIDs.insert(recipe.id)
         }
     }
 }

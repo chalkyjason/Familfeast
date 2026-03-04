@@ -93,6 +93,15 @@ final class FamilyMember {
     /// Whether this member has accepted the invitation
     var hasAcceptedInvite: Bool
 
+    /// Dietary restrictions (e.g., Vegetarian, Vegan, Gluten-Free)
+    var dietaryRestrictions: [String] = []
+
+    /// Allergens (e.g., Peanuts, Tree Nuts, Shellfish)
+    var allergens: [String] = []
+
+    /// Cuisine preferences (e.g., Italian, Mexican, Thai)
+    var cuisinePreferences: [String] = []
+
     /// Reference to the family group
     var familyGroup: FamilyGroup?
 
@@ -107,7 +116,10 @@ final class FamilyMember {
         contactInfo: String? = nil,
         role: FamilyRole = .member,
         joinedAt: Date = Date(),
-        hasAcceptedInvite: Bool = false
+        hasAcceptedInvite: Bool = false,
+        dietaryRestrictions: [String] = [],
+        allergens: [String] = [],
+        cuisinePreferences: [String] = []
     ) {
         self.id = id
         self.userRecordID = userRecordID
@@ -116,6 +128,9 @@ final class FamilyMember {
         self.role = role
         self.joinedAt = joinedAt
         self.hasAcceptedInvite = hasAcceptedInvite
+        self.dietaryRestrictions = dietaryRestrictions
+        self.allergens = allergens
+        self.cuisinePreferences = cuisinePreferences
         self.votes = []
     }
 }

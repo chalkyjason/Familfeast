@@ -113,7 +113,7 @@ struct VotingSessionView: View {
         .padding()
     }
 
-    private var completionView: View {
+    private var completionView: some View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 80))

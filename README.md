@@ -63,13 +63,11 @@ FamilyFeast/
 │   ├── App/
 │   │   └── FamilyFeastApp.swift          # Main app entry point
 │   ├── Models/                            # SwiftData models
-│   │   ├── FamilyGroup.swift             # Family container
-│   │   ├── FamilyMember.swift            # User representation
+│   │   ├── FamilyGroup.swift             # Family container + FamilyMember
 │   │   ├── Recipe.swift                  # Recipe entity
 │   │   ├── Ingredient.swift              # Ingredient with parsing
 │   │   ├── Vote.swift                    # Vote with scoring
-│   │   ├── MealSession.swift             # Voting session
-│   │   ├── ScheduledMeal.swift           # Calendar entry
+│   │   ├── MealSession.swift             # Voting session + ScheduledMeal
 │   │   └── ShoppingList.swift            # Shopping list entities
 │   ├── Views/                             # SwiftUI views
 │   │   ├── Onboarding/                   # First-time setup
@@ -103,7 +101,7 @@ FamilyFeast/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/FamilyFeast.git
+   git clone https://github.com/chalkyjason/Familfeast.git
    cd FamilyFeast
    ```
 
@@ -222,12 +220,15 @@ FamilyFeast uses a **Modified Borda Count** system to achieve consensus:
 - [x] CloudKit integration
 - [x] Voting algorithm
 - [x] Basic UI components
+- [x] Voting UI (Tinder-style swipe)
+- [x] End-to-end meal session flow
+- [x] Shopping list generation from meal plans
 
 ### Phase 2: Core Features (Current)
-- [ ] Complete recipe entry forms
+- [x] Complete recipe entry forms
+- [x] Shopping list generation from meal plans
 - [ ] Drag-and-drop calendar
 - [ ] AI recipe generation (full implementation)
-- [ ] Shopping list generation from meal plans
 - [ ] Budget tracking dashboard
 
 ### Phase 3: Polish
@@ -273,7 +274,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-- **GitHub**: [@yourusername](https://github.com/yourusername)
+- **GitHub**: [@chalkyjason](https://github.com/chalkyjason)
 - **Email**: hello@familyfeast.app
 - **Website**: [familyfeast.app](https://familyfeast.app)
 

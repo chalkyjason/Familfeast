@@ -39,7 +39,7 @@ struct FamilyFeastApp: App {
             let configuration = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false,
-                cloudKitDatabase: .automatic
+                cloudKitDatabase: .none
             )
 
             modelContainer = try ModelContainer(
@@ -64,6 +64,7 @@ struct FamilyFeastApp: App {
             ContentView()
                 .modelContainer(modelContainer)
                 .environment(\.cloudKitService, cloudKitService)
+                .environment(\.aiService, aiService)
                 .onAppear {
                     configureServices()
                 }

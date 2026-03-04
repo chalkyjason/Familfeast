@@ -45,7 +45,7 @@ struct ContentView: View {
     private var mainTabView: some View {
         TabView(selection: $selectedTab) {
             // Home / Dashboard
-            DashboardView(familyGroup: currentFamilyGroup)
+            DashboardView(familyGroup: currentFamilyGroup, selectedTab: $selectedTab)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }

@@ -29,17 +29,16 @@ struct OnboardingView: View {
                 ProgressView(value: Double(currentStep), total: 2)
                     .padding(.horizontal)
 
-                TabView(selection: $currentStep) {
-                    welcomeStep
-                        .tag(0)
-
-                    setupFamilyStep
-                        .tag(1)
-
-                    completionStep
-                        .tag(2)
+                Group {
+                    switch currentStep {
+                    case 0:
+                        welcomeStep
+                    case 1:
+                        setupFamilyStep
+                    default:
+                        completionStep
+                    }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .navigationTitle("Welcome to FamilyFeast")
             .navigationBarTitleDisplayMode(.inline)
@@ -63,7 +62,7 @@ struct OnboardingView: View {
 
     // MARK: - Steps
 
-    private var welcomeStep: View {
+    private var welcomeStep: some View {
         VStack(spacing: 32) {
             Spacer()
 
@@ -132,7 +131,7 @@ struct OnboardingView: View {
         }
     }
 
-    private var setupFamilyStep: View {
+    private var setupFamilyStep: some View {
         VStack(spacing: 24) {
             Spacer()
 
@@ -171,7 +170,7 @@ struct OnboardingView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(familyName.isEmpty ? .gray : .green.gradient)
+                        .background(familyName.isEmpty ? Color.gray : Color.green)
                         .cornerRadius(12)
                 }
                 .disabled(familyName.isEmpty)
@@ -180,7 +179,7 @@ struct OnboardingView: View {
         }
     }
 
-    private var completionStep: View {
+    private var completionStep: some View {
         VStack(spacing: 24) {
             Spacer()
 
@@ -220,46 +219,48 @@ struct OnboardingView: View {
     private func createFamilyGroup() {
         isLoading = true
 
+        // Try to get iCloud user ID, fall back to local UUID
         Task {
+            var userIDString: String = UUID().uuidString
+
             do {
-                // Get current user ID
                 let userRecordID = try await cloudKitService.fetchUserRecordID()
-                let userIDString = userRecordID.recordName
-
-                // Create family group
-                let group = FamilyGroup(
-                    name: familyName,
-                    ownerUserID: userIDString
-                )
-
-                // Create owner member
-                let owner = FamilyMember(
-                    userRecordID: userIDString,
-                    displayName: "Me",
-                    role: .owner,
-                    hasAcceptedInvite: true
-                )
-                owner.familyGroup = group
-
-                // Save to SwiftData
-                modelContext.insert(group)
-                modelContext.insert(owner)
-
-                try modelContext.save()
-
-                await MainActor.run {
-                    isLoading = false
-                    withAnimation {
-                        currentStep = 2
-                    }
-                    onComplete(group)
-                }
-
+                userIDString = userRecordID.recordName
             } catch {
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = "Failed to create family group: \(error.localizedDescription)"
+                print("CloudKit not available, using local ID: \(error.localizedDescription)")
+            }
+
+            // Create family group
+            let group = FamilyGroup(
+                name: familyName,
+                ownerUserID: userIDString
+            )
+
+            // Create owner member
+            let owner = FamilyMember(
+                userRecordID: userIDString,
+                displayName: "Me",
+                role: .owner,
+                hasAcceptedInvite: true
+            )
+            owner.familyGroup = group
+
+            // Save to SwiftData
+            modelContext.insert(group)
+            modelContext.insert(owner)
+
+            do {
+                try modelContext.save()
+            } catch {
+                print("Failed to save: \(error)")
+            }
+
+            await MainActor.run {
+                isLoading = false
+                withAnimation {
+                    currentStep = 2
                 }
+                onComplete(group)
             }
         }
     }

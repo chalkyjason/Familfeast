@@ -1,4 +1,4 @@
-# FamilyFeast 🍽️
+# FamilyFeast
 
 **A Consensus-Driven Meal Planning Platform for iOS**
 
@@ -9,42 +9,53 @@ FamilyFeast solves the age-old question "What's for dinner?" by transforming mea
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0-green)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-## 🌟 Features
+## Features
 
 ### Core Functionality
 
-- **👨‍👩‍👧‍👦 Family Collaboration**
+- **Family Collaboration**
   - Multi-user support via CloudKit
   - Secure family group invitations
   - Real-time synchronization across all devices
 
-- **🗳️ Democratic Voting System**
+- **Democratic Voting System**
   - Tinder-style swipe interface (Like/Dislike/OK)
   - Borda Count consensus algorithm
   - Prevents polarizing choices that leave family members unhappy
 
-- **🤖 AI-Powered Features**
-  - Recipe suggestions based on available ingredients
-  - Intelligent ingredient parsing from natural language
-  - Smart meal plan generation with dietary considerations
+- **AI-Powered Features**
+  - Recipe suggestions from text descriptions or available ingredients
+  - Import recipes from any URL via AI parsing
+  - Smart ingredient parsing from natural language
 
-- **🛒 Smart Shopping Lists**
+- **Recipe Scaling & Cooking Mode**
+  - Scale ingredients up or down by adjusting servings
+  - Step-by-step cooking mode with built-in countdown timer
+  - Nutrition info display (calories, protein, carbs, fat, fiber, sodium)
+
+- **Smart Shopping Lists**
   - Auto-generated from meal plans
-  - Organized by grocery store aisle
+  - Organized by grocery store aisle/category
   - Budget tracking and cost estimation
-  - Collaborative checking (everyone sees updates in real-time)
+  - Collaborative checking with haptic feedback
 
-- **📅 Meal Scheduling**
-  - Drag-and-drop weekly calendar
+- **Meal Scheduling**
+  - Weekly calendar with meal session management
   - Considers prep time and family schedule
-  - Prevents meal fatigue with variety optimization
+  - Dietary conflict warnings based on family member profiles
 
-- **💰 Budget Management**
+- **Dietary Preference Profiles**
+  - Per-member dietary restrictions (Vegetarian, Vegan, Gluten-Free, Keto, etc.)
+  - Allergen tracking (Peanuts, Tree Nuts, Shellfish, Dairy, etc.)
+  - Cuisine preferences (Italian, Mexican, Thai, Indian, etc.)
+  - Automatic conflict warnings during meal planning
+
+- **Budget Management**
   - Cost estimation per recipe and per meal plan
   - Track actual spending vs. estimates
   - Budget alerts when approaching limits
 
-## 🏗️ Architecture
+## Architecture
 
 ### Technical Stack
 
@@ -53,6 +64,7 @@ FamilyFeast solves the age-old question "What's for dinner?" by transforming mea
 - **Synchronization**: CloudKit with shared database containers
 - **AI Integration**: OpenAI GPT-4o-mini for cost-effective intelligence
 - **Recipe Data**: Spoonacular API for ingredient pricing and nutrition
+- **Project Generation**: XcodeGen from `project.yml`
 - **Design Pattern**: MVVM with service-oriented architecture
 
 ### Project Structure
@@ -64,36 +76,52 @@ FamilyFeast/
 │   │   └── FamilyFeastApp.swift          # Main app entry point
 │   ├── Models/                            # SwiftData models
 │   │   ├── FamilyGroup.swift             # Family container + FamilyMember
-│   │   ├── Recipe.swift                  # Recipe entity
+│   │   ├── Recipe.swift                  # Recipe entity + NutritionInfo
 │   │   ├── Ingredient.swift              # Ingredient with parsing
 │   │   ├── Vote.swift                    # Vote with scoring
 │   │   ├── MealSession.swift             # Voting session + ScheduledMeal
 │   │   └── ShoppingList.swift            # Shopping list entities
-│   ├── Views/                             # SwiftUI views
-│   │   ├── Onboarding/                   # First-time setup
-│   │   ├── Dashboard/                    # Home screen
-│   │   ├── Recipe/                       # Recipe management
-│   │   ├── Voting/                       # Swipe voting UI
-│   │   ├── MealPlanning/                 # Calendar and planning
-│   │   ├── Shopping/                     # Shopping list UI
-│   │   └── Family/                       # Settings and invites
-│   ├── Services/                          # Business logic layer
+│   ├── Views/
+│   │   ├── ContentView.swift             # Root tab view
+│   │   ├── Onboarding/
+│   │   │   └── OnboardingView.swift      # First-time setup wizard
+│   │   ├── Dashboard/
+│   │   │   └── DashboardView.swift       # Home screen with quick actions
+│   │   ├── Recipe/
+│   │   │   ├── RecipeListView.swift      # Recipe list, detail, and add views
+│   │   │   ├── CookingModeView.swift     # Step-by-step cooking with timer
+│   │   │   ├── RecipeURLImportView.swift # Import recipes from URLs via AI
+│   │   │   └── AISuggestionsView.swift   # AI-powered recipe suggestions
+│   │   ├── Voting/
+│   │   │   ├── VotingSessionView.swift   # Session management
+│   │   │   └── VotingCardView.swift      # Swipe card UI
+│   │   ├── MealPlanning/
+│   │   │   └── MealPlanningView.swift    # Calendar and planning
+│   │   ├── Shopping/
+│   │   │   └── ShoppingListView.swift    # Shopping list UI
+│   │   └── Family/
+│   │       ├── FamilySettingsView.swift      # Family group settings
+│   │       ├── DietaryRestrictionsView.swift # Per-member dietary/allergen config
+│   │       └── CuisinePreferencesView.swift  # Per-member cuisine preferences
+│   ├── Services/
 │   │   ├── CloudKitService.swift         # CloudKit operations
 │   │   ├── AIService.swift               # OpenAI integration
 │   │   └── SpoonacularService.swift      # Recipe API
 │   └── Utilities/
 │       └── VotingAlgorithm.swift         # Consensus algorithms
+├── FamilyFeast.entitlements              # CloudKit entitlements
+├── project.yml                           # XcodeGen project spec
 └── Tests/
     └── VotingAlgorithmTests.swift        # Unit tests
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
 - **Xcode 15.0+**
 - **iOS 17.0+ SDK**
-- **Apple Developer Account** (for CloudKit)
+- **Apple Developer Account** (for CloudKit on device)
 - **OpenAI API Key** (optional, for AI features)
 - **Spoonacular API Key** (optional, for pricing data)
 
@@ -102,29 +130,28 @@ FamilyFeast/
 1. **Clone the repository**
    ```bash
    git clone https://github.com/chalkyjason/Familfeast.git
-   cd FamilyFeast
+   cd Familfeast
    ```
 
 2. **Open in Xcode**
    ```bash
-   open Package.swift
-   # OR create a new iOS App project and copy the Sources/ directory
+   open FamilyFeast.xcodeproj
    ```
+   The Xcode project is included in the repo. Just open it and build.
 
-3. **Configure CloudKit**
-   - In Xcode, select your target
+   > **Regenerating the project** (optional): If you modify `project.yml`, install [XcodeGen](https://github.com/yonaskolb/XcodeGen) and run `xcodegen generate`.
+
+3. **Configure Signing**
+   - In Xcode, select the FamilyFeast target
    - Go to "Signing & Capabilities"
-   - Add "iCloud" capability
-   - Enable "CloudKit"
-   - Create or select a CloudKit container: `iCloud.com.yourteam.familyfeast`
+   - Select your development team
+   - CloudKit entitlements are already configured in `FamilyFeast.entitlements`
 
-4. **Set up API Keys**
+4. **Set up API Keys** (optional)
 
-   **Option 1: Environment Variables (Recommended for Development)**
-   ```bash
-   export OPENAI_API_KEY="sk-your-openai-key"
-   export SPOONACULAR_API_KEY="your-spoonacular-key"
-   ```
+   **Option 1: Xcode Scheme Environment Variables (Recommended)**
+   - Edit Scheme > Run > Arguments > Environment Variables
+   - Add `OPENAI_API_KEY` and `SPOONACULAR_API_KEY`
 
    **Option 2: Create Secrets File**
    Create `Sources/Utilities/Secrets.swift`:
@@ -134,88 +161,70 @@ FamilyFeast/
        static let spoonacularKey = "your-spoonacular-api-key"
    }
    ```
-   ⚠️ **Important**: Add `Secrets.swift` to `.gitignore`
+   This file is already in `.gitignore`.
 
 5. **Build and Run**
    - Select a simulator or device
-   - Press `⌘R` to build and run
-   - Sign in with an iCloud account when prompted
+   - Press Cmd+R to build and run
 
 ### First-Time Setup
 
-1. **Create Family Group**
-   - Launch the app
-   - Follow the onboarding wizard
-   - Name your family group
+1. Launch the app and follow the onboarding wizard
+2. Name your family group
+3. Add recipes (manually, via AI suggestions, or import from URL)
+4. Create a voting session and invite family members to vote
+5. Generate shopping lists from finalized meal plans
 
-2. **Invite Family Members**
-   - Go to Family tab
-   - Tap "Invite Family Member"
-   - Enter email or phone number
-   - They'll receive an iCloud invitation
+## Running on Simulator vs Device
 
-3. **Add Your First Recipe**
-   - Tap "+" in Recipes tab
-   - Enter manually or use AI suggestion
-   - Add ingredients and instructions
+- **Simulator**: Works fully for local features. CloudKit sync is unavailable (the app gracefully falls back to local-only mode).
+- **Device**: Full CloudKit sync requires an Apple Developer account and iCloud sign-in.
 
-4. **Start a Voting Session**
-   - Go to Plan tab
-   - Create a new meal session
-   - Add candidate recipes
-   - Family members vote via swipe interface
-
-## 🧪 Testing
+## Testing
 
 ### Run Unit Tests
 ```bash
 # Via Xcode
-⌘U
+Cmd+U
 
-# Via command line
-swift test
+# Via command line (requires xcodebuild)
+xcodebuild test -project FamilyFeast.xcodeproj -scheme FamilyFeast -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
 ### Test Coverage
-- ✅ Voting algorithm (Borda Count)
-- ✅ Consensus metrics calculation
-- ✅ Schulze method ranking
-- ✅ Budget constraint filtering
-- ✅ Performance tests for large datasets
+- Voting algorithm (Borda Count)
+- Consensus metrics calculation
+- Schulze method ranking
+- Budget constraint filtering
+- Performance tests for large datasets
 
-## 📊 Voting Algorithm Explained
+## Voting Algorithm
 
 FamilyFeast uses a **Modified Borda Count** system to achieve consensus:
 
 ### Vote Values
-- **Super Like** (❤️): +2 points
-- **Like** (👍): +1 point
-- **OK** (✋): 0 points
-- **Dislike** (👎): -100 points (soft veto)
-- **Veto** (❌): Disqualified (hard constraint, e.g., allergy)
+- **Super Like**: +2 points
+- **Like**: +1 point
+- **OK**: 0 points
+- **Dislike**: -100 points (soft veto)
+- **Veto**: Disqualified (hard constraint, e.g., allergy)
 
 ### Selection Process
-1. **Nomination**: Head of Household or AI selects 15-20 candidate recipes
-2. **Deliberation**: Family members vote asynchronously
+1. **Nomination**: Head of Household or AI selects candidate recipes
+2. **Deliberation**: Family members vote asynchronously via swipe UI
 3. **Resolution**: Algorithm calculates scores and selects top N recipes
 4. **Ratification**: HoH schedules winning recipes to specific days
 
-### Why This Works
-- **Prevents polarization**: Disliked recipes score negatively, even if some love them
-- **Rewards consensus**: Recipes that everyone is "OK" with often win over divisive choices
-- **Respects strong preferences**: Allergies/restrictions get absolute veto power
-
-## 🔐 Privacy & Security
+## Privacy & Security
 
 - **End-to-End Encryption**: CloudKit uses Apple's encryption for all synced data
 - **No Account Creation**: Uses existing iCloud credentials
 - **Local-First**: All data stored locally with optional cloud sync
-- **Secure Invitations**: CloudKit handles invitation verification
 - **No Third-Party Tracking**: Zero analytics or tracking SDKs
 
-## 🛣️ Roadmap
+## Roadmap
 
-### Phase 1: Foundation ✅
+### Phase 1: Foundation
 - [x] SwiftData models
 - [x] CloudKit integration
 - [x] Voting algorithm
@@ -224,18 +233,21 @@ FamilyFeast uses a **Modified Borda Count** system to achieve consensus:
 - [x] End-to-end meal session flow
 - [x] Shopping list generation from meal plans
 
-### Phase 2: Core Features (Current)
+### Phase 2: Core Features
 - [x] Complete recipe entry forms
-- [x] Shopping list generation from meal plans
+- [x] AI recipe suggestions and generation
+- [x] Recipe import from URLs
+- [x] Recipe scaling (adjust servings)
+- [x] Nutrition information display
+- [x] Step-by-step cooking mode with timer
+- [x] Dietary preference profiles (restrictions, allergens, cuisine prefs)
+- [x] Dietary conflict warnings in meal planning
 - [ ] Drag-and-drop calendar
-- [ ] AI recipe generation (full implementation)
 - [ ] Budget tracking dashboard
 
 ### Phase 3: Polish
 - [ ] Recipe image upload and storage
-- [ ] Nutrition information display
 - [ ] Meal history and favorites
-- [ ] Recipe import from URLs (web scraping)
 - [ ] Push notifications for voting reminders
 
 ### Phase 4: Advanced
@@ -245,7 +257,7 @@ FamilyFeast uses a **Modified Borda Count** system to achieve consensus:
 - [ ] Meal prep planning
 - [ ] Leftovers tracking
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -255,29 +267,17 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-### Code Style
-- Follow Swift API Design Guidelines
-- Use SwiftLint for consistency
-- Write unit tests for business logic
-- Comment complex algorithms
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Voting Theory**: Inspired by Condorcet methods and social choice theory
 - **Design**: Tinder's swipe interface for intuitive voting
 - **APIs**: OpenAI for AI capabilities, Spoonacular for recipe data
 - **Apple**: SwiftUI, SwiftData, and CloudKit frameworks
 
-## 📧 Contact
+## Contact
 
 - **GitHub**: [@chalkyjason](https://github.com/chalkyjason)
-- **Email**: hello@familyfeast.app
-- **Website**: [familyfeast.app](https://familyfeast.app)
-
----
-
-**Made with ❤️ for families who want to end dinner arguments**

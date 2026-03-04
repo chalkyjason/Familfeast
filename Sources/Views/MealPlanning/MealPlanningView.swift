@@ -132,7 +132,7 @@ struct MealPlanningView: View {
                         Text("Budget")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("$\(String(format: "%.2f", Double(budget) / 100.0))")
+                        Text(budget.asDollarString)
                             .font(.headline)
                     }
                 }
@@ -146,10 +146,7 @@ struct MealPlanningView: View {
                 }
             }
         }
-        .padding()
-        .background(.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardStyle()
     }
 
     private func votingStatusCard(_ session: MealSession) -> some View {
@@ -212,10 +209,7 @@ struct MealPlanningView: View {
                     .foregroundColor(.secondary)
             }
         }
-        .padding()
-        .background(.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardStyle()
     }
 
     private func candidateRecipesSection(_ session: MealSession) -> some View {
@@ -270,31 +264,14 @@ struct MealPlanningView: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "calendar.badge.plus")
-                .font(.system(size: 60))
-                .foregroundColor(.gray.opacity(0.5))
-
-            Text("No Meal Sessions")
-                .font(.title2)
-                .fontWeight(.semibold)
-
-            Text("Create a new session to start planning meals")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button(action: { showingNewSession = true }) {
-                Text("Create Session")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(.blue.gradient)
-                    .cornerRadius(10)
-            }
+        EmptyStateView(
+            icon: "calendar.badge.plus",
+            title: "No Meal Sessions",
+            subtitle: "Create a new session to start planning meals",
+            buttonTitle: "Create Session"
+        ) {
+            showingNewSession = true
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Computed Properties
@@ -336,279 +313,6 @@ struct MealPlanningView: View {
             try modelContext.save()
         } catch {
             print("Failed to finalize session: \(error)")
-        }
-    }
-}
-
-// MARK: - Supporting Views
-
-struct StatusBadge: View {
-    let status: SessionStatus
-
-    var body: some View {
-        Text(status.rawValue.capitalized)
-            .font(.caption)
-            .fontWeight(.medium)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(backgroundColor)
-            .foregroundColor(.white)
-            .cornerRadius(12)
-    }
-
-    private var backgroundColor: Color {
-        switch status {
-        case .planning: return .blue
-        case .voting: return .green
-        case .finalizing: return .orange
-        case .finalized: return .purple
-        case .active: return .pink
-        case .completed: return .gray
-        case .cancelled: return .red
-        }
-    }
-}
-
-struct ScheduledMealRow: View {
-    let meal: ScheduledMeal
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(meal.dayOfWeek)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(meal.scheduledDate.formatted(date: .abbreviated, time: .omitted))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            .frame(width: 80, alignment: .leading)
-
-            if let recipe = meal.recipe {
-                HStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.gray.opacity(0.2))
-                        .frame(width: 50, height: 50)
-                        .overlay {
-                            Image(systemName: "fork.knife")
-                                .foregroundColor(.gray)
-                        }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(recipe.title)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .lineLimit(1)
-
-                        Text("\(recipe.totalTime) min")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Spacer()
-                }
-            } else {
-                Text("No recipe assigned")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding()
-        .background(.gray.opacity(0.05))
-        .cornerRadius(12)
-    }
-}
-
-struct CandidateRecipeCard: View {
-    let recipe: Recipe
-    let votes: [Vote]
-
-    var body: some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.gray.opacity(0.2))
-                .frame(width: 60, height: 60)
-                .overlay {
-                    Image(systemName: "fork.knife")
-                        .foregroundColor(.gray)
-                }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(recipe.title)
-                    .font(.headline)
-                    .lineLimit(1)
-
-                // Vote counts
-                let recipeVotes = votes.filter { $0.recipe?.id == recipe.id }
-                let voteCounts = recipeVotes.countByType()
-
-                HStack(spacing: 8) {
-                    if let likes = voteCounts[.like] {
-                        Label("\(likes)", systemImage: "hand.thumbsup.fill")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    }
-                    if let dislikes = voteCounts[.dislike] {
-                        Label("\(dislikes)", systemImage: "hand.thumbsdown.fill")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-                    Text("Score: \(recipeVotes.bordaScore())")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            Spacer()
-        }
-        .padding()
-        .background(.white)
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-    }
-}
-
-struct CreateMealSessionView: View {
-    let familyGroup: FamilyGroup
-
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var name = ""
-    @State private var startDate = Date()
-    @State private var endDate = Date().addingTimeInterval(7 * 24 * 60 * 60)
-    @State private var numberOfMeals = 7
-    @State private var budgetLimit = ""
-    @State private var selectedRecipeIDs: Set<UUID> = []
-    @State private var showingRecipePicker = false
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Session Details") {
-                    TextField("Name (e.g. Week of Jan 15)", text: $name)
-                    DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
-                    DatePicker("End Date", selection: $endDate, displayedComponents: .date)
-                }
-
-                Section("Meals") {
-                    Stepper("Number of meals: \(numberOfMeals)", value: $numberOfMeals, in: 1...21)
-                    TextField("Budget (optional, e.g. 150.00)", text: $budgetLimit)
-                        #if os(iOS)
-                        .keyboardType(.decimalPad)
-                        #endif
-                }
-
-                Section("Candidate Recipes") {
-                    Button(action: { showingRecipePicker = true }) {
-                        HStack {
-                            Text("Select Recipes")
-                            Spacer()
-                            Text("\(selectedRecipeIDs.count) selected")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("New Meal Session")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") { createSession() }
-                }
-            }
-            .sheet(isPresented: $showingRecipePicker) {
-                RecipePickerView(selectedRecipeIDs: $selectedRecipeIDs)
-            }
-        }
-    }
-
-    private func createSession() {
-        let sessionName = name.isEmpty ? "Week of \(startDate.formatted(date: .abbreviated, time: .omitted))" : name
-
-        let session = MealSession(
-            name: sessionName,
-            startDate: startDate,
-            endDate: endDate,
-            numberOfMeals: numberOfMeals
-        )
-
-        // Parse budget
-        if let budgetValue = Double(budgetLimit), budgetValue > 0 {
-            session.budgetLimit = Int(budgetValue * 100)
-        }
-
-        session.familyGroup = familyGroup
-
-        // Fetch selected recipes and attach as candidates
-        if !selectedRecipeIDs.isEmpty {
-            let allIDs = selectedRecipeIDs
-            var descriptor = FetchDescriptor<Recipe>()
-            descriptor.predicate = #Predicate<Recipe> { recipe in
-                allIDs.contains(recipe.id)
-            }
-            if let recipes = try? modelContext.fetch(descriptor) {
-                session.candidateRecipes = recipes
-                session.status = .voting
-            }
-        }
-
-        modelContext.insert(session)
-
-        do {
-            try modelContext.save()
-            dismiss()
-        } catch {
-            print("Failed to create session: \(error)")
-        }
-    }
-}
-
-struct RecipePickerView: View {
-    @Binding var selectedRecipeIDs: Set<UUID>
-
-    @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Recipe.title) private var recipes: [Recipe]
-
-    @State private var searchText = ""
-
-    private var filteredRecipes: [Recipe] {
-        if searchText.isEmpty { return recipes }
-        return recipes.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
-    }
-
-    var body: some View {
-        NavigationStack {
-            List(filteredRecipes) { recipe in
-                Button(action: { toggleRecipe(recipe) }) {
-                    HStack {
-                        RecipeRow(recipe: recipe)
-                        Spacer()
-                        if selectedRecipeIDs.contains(recipe.id) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-            .searchable(text: $searchText, prompt: "Search recipes")
-            .navigationTitle("Select Recipes")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-    }
-
-    private func toggleRecipe(_ recipe: Recipe) {
-        if selectedRecipeIDs.contains(recipe.id) {
-            selectedRecipeIDs.remove(recipe.id)
-        } else {
-            selectedRecipeIDs.insert(recipe.id)
         }
     }
 }

@@ -10,7 +10,7 @@ struct DashboardView: View {
     // MARK: - Properties
 
     let familyGroup: FamilyGroup?
-    @Binding var selectedTab: Int
+    @Binding var selectedTab: AppTab
 
     // MARK: - Queries
 
@@ -26,7 +26,6 @@ struct DashboardView: View {
 
     @State private var showingNewSessionSheet = false
     @State private var showingAddRecipe = false
-    @State private var showingAISuggestions = false
 
     // MARK: - Body
 
@@ -82,9 +81,6 @@ struct DashboardView: View {
             }
             .sheet(isPresented: $showingAddRecipe) {
                 AddRecipeView(familyGroup: familyGroup)
-            }
-            .sheet(isPresented: $showingAISuggestions) {
-                AISuggestionsView(familyGroup: familyGroup)
             }
         }
     }
@@ -146,7 +142,7 @@ struct DashboardView: View {
                         Text("Budget")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("$\(String(format: "%.2f", Double(budget) / 100.0))")
+                        Text(budget.asDollarString)
                             .font(.headline)
                     }
                 }
@@ -165,10 +161,7 @@ struct DashboardView: View {
                 }
             }
         }
-        .padding()
-        .background(.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardStyle()
     }
 
     private var quickActionsGrid: some View {
@@ -178,7 +171,7 @@ struct DashboardView: View {
                 icon: "hand.thumbsup.fill",
                 color: .green
             ) {
-                selectedTab = 2
+                selectedTab = .plan
             }
 
             QuickActionCard(
@@ -194,15 +187,15 @@ struct DashboardView: View {
                 icon: "cart.fill",
                 color: .orange
             ) {
-                selectedTab = 3
+                selectedTab = .shopping
             }
 
             QuickActionCard(
-                title: "AI Suggestions",
-                icon: "sparkles",
+                title: "Family",
+                icon: "person.3.fill",
                 color: .purple
             ) {
-                showingAISuggestions = true
+                selectedTab = .family
             }
         }
     }
@@ -256,10 +249,7 @@ struct DashboardView: View {
                     .cornerRadius(10)
             }
         }
-        .padding()
-        .background(.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardStyle()
     }
 
     private var statisticsSection: some View {
@@ -303,91 +293,9 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Supporting Views
-
-struct QuickActionCard: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.title)
-                    .foregroundColor(color)
-
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(.white)
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-        }
-    }
-}
-
-struct RecipeCard: View {
-    let recipe: Recipe
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Image placeholder
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.gray.opacity(0.2))
-                .frame(width: 120, height: 120)
-                .overlay {
-                    Image(systemName: "fork.knife")
-                        .font(.largeTitle)
-                        .foregroundColor(.gray.opacity(0.5))
-                }
-
-            Text(recipe.title)
-                .font(.caption)
-                .fontWeight(.medium)
-                .lineLimit(2)
-                .frame(width: 120)
-        }
-    }
-}
-
-struct StatCard: View {
-    let value: String
-    let label: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundColor(color)
-
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(.white)
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
-    DashboardView(familyGroup: nil, selectedTab: .constant(0))
+    DashboardView(familyGroup: nil, selectedTab: .constant(.home))
         .modelContainer(for: [FamilyGroup.self, MealSession.self, Recipe.self], inMemory: true)
 }

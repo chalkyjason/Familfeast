@@ -113,7 +113,7 @@ struct ShoppingListView: View {
                         Text("Estimated Total")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("$\(String(format: "%.2f", Double(estimated) / 100.0))")
+                        Text(estimated.asDollarString)
                             .font(.title3)
                             .fontWeight(.semibold)
                     }
@@ -125,7 +125,7 @@ struct ShoppingListView: View {
                             Text("Actual Spent")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Text("$\(String(format: "%.2f", Double(actual) / 100.0))")
+                            Text(actual.asDollarString)
                                 .font(.title3)
                                 .fontWeight(.semibold)
                                 .foregroundColor(actual > estimated ? .red : .green)
@@ -178,31 +178,15 @@ struct ShoppingListView: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "cart.badge.plus")
-                .font(.system(size: 60))
-                .foregroundColor(.gray.opacity(0.5))
-
-            Text("No Shopping Lists")
-                .font(.title2)
-                .fontWeight(.semibold)
-
-            Text("Create a shopping list from your meal plans")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button(action: { showingNewList = true }) {
-                Text("Create List")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(.orange.gradient)
-                    .cornerRadius(10)
-            }
+        EmptyStateView(
+            icon: "cart.badge.plus",
+            title: "No Shopping Lists",
+            subtitle: "Create a shopping list from your meal plans",
+            buttonTitle: "Create List",
+            buttonColor: .orange
+        ) {
+            showingNewList = true
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Computed Properties
@@ -236,147 +220,6 @@ struct ShoppingListView: View {
             try modelContext.save()
         } catch {
             print("Failed to complete list: \(error)")
-        }
-    }
-}
-
-// MARK: - Supporting Views
-
-struct ShoppingListItemRow: View {
-    let item: ShoppingListItem
-    let onToggle: () -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Checkbox
-            Button(action: onToggle) {
-                Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundColor(item.isChecked ? .green : .gray)
-            }
-            .buttonStyle(.plain)
-
-            // Item info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.displayString)
-                    .font(.body)
-                    .strikethrough(item.isChecked)
-                    .foregroundColor(item.isChecked ? .secondary : .primary)
-
-                if let notes = item.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                if let cost = item.estimatedCost {
-                    Text("~$\(String(format: "%.2f", Double(cost) / 100.0))")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                }
-            }
-
-            Spacer()
-
-            if let aisle = item.aisle {
-                Text(aisle)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.blue.opacity(0.1))
-                    .foregroundColor(.blue)
-                    .cornerRadius(8)
-            }
-        }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onToggle()
-        }
-    }
-}
-
-struct CreateShoppingListView: View {
-    let familyGroup: FamilyGroup?
-
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-
-    @Query(sort: \MealSession.startDate, order: .reverse)
-    private var mealSessions: [MealSession]
-
-    @State private var listName = ""
-    @State private var storeName = ""
-
-    private var finalizedSessions: [MealSession] {
-        mealSessions.filter { $0.status == .finalized || $0.status == .active }
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("List Details") {
-                    TextField("List Name", text: $listName)
-                    TextField("Store (Optional)", text: $storeName)
-                }
-
-                Section("Generate From") {
-                    Button("Current Meal Plan") {
-                        createFromMealPlan()
-                    }
-                    .disabled(finalizedSessions.isEmpty)
-
-                    Button("Start Empty") {
-                        createEmptyList()
-                    }
-                }
-            }
-            .navigationTitle("New Shopping List")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-    }
-
-    private func createFromMealPlan() {
-        guard let session = finalizedSessions.first else { return }
-
-        let list = ShoppingList.createFrom(mealSession: session, context: modelContext)
-
-        if !listName.isEmpty {
-            list.name = listName
-        }
-        if !storeName.isEmpty {
-            list.store = storeName
-        }
-        list.familyGroup = familyGroup
-
-        modelContext.insert(list)
-
-        do {
-            try modelContext.save()
-            dismiss()
-        } catch {
-            print("Failed to create list from meal plan: \(error)")
-        }
-    }
-
-    private func createEmptyList() {
-        let list = ShoppingList(
-            name: listName.isEmpty ? "Shopping List" : listName,
-            store: storeName.isEmpty ? nil : storeName
-        )
-        list.familyGroup = familyGroup
-
-        modelContext.insert(list)
-
-        do {
-            try modelContext.save()
-            dismiss()
-        } catch {
-            print("Failed to create list: \(error)")
         }
     }
 }

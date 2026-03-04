@@ -1,19 +1,25 @@
 import SwiftUI
 import SwiftData
 
+enum AppTab: Int {
+    case home = 0
+    case recipes = 1
+    case plan = 2
+    case shopping = 3
+    case family = 4
+}
+
 struct ContentView: View {
 
     // MARK: - Environment
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.cloudKitService) private var cloudKitService
 
     // MARK: - State
 
-    @State private var selectedTab = 0
+    @State private var selectedTab: AppTab = .home
     @State private var showingOnboarding = false
     @State private var currentFamilyGroup: FamilyGroup?
-    @State private var isCloudKitAvailable = false
 
     // MARK: - Queries
 
@@ -49,14 +55,14 @@ struct ContentView: View {
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
-                .tag(0)
+                .tag(AppTab.home)
 
             // Recipes
             RecipeListView(familyGroup: currentFamilyGroup)
                 .tabItem {
                     Label("Recipes", systemImage: "book.fill")
                 }
-                .tag(1)
+                .tag(AppTab.recipes)
 
             // Voting / Meal Planning
             if let group = currentFamilyGroup {
@@ -64,7 +70,7 @@ struct ContentView: View {
                     .tabItem {
                         Label("Plan", systemImage: "calendar")
                     }
-                    .tag(2)
+                    .tag(AppTab.plan)
             }
 
             // Shopping List
@@ -72,37 +78,24 @@ struct ContentView: View {
                 .tabItem {
                     Label("Shopping", systemImage: "cart.fill")
                 }
-                .tag(3)
+                .tag(AppTab.shopping)
 
             // Family / Settings
             FamilySettingsView(familyGroup: currentFamilyGroup)
                 .tabItem {
                     Label("Family", systemImage: "person.3.fill")
                 }
-                .tag(4)
+                .tag(AppTab.family)
         }
     }
 
     // MARK: - Private Methods
 
     private func checkSetup() {
-        // Check if user has a family group
         if familyGroups.isEmpty {
             showingOnboarding = true
         } else {
             currentFamilyGroup = familyGroups.first
-        }
-
-        // Check CloudKit availability
-        Task {
-            do {
-                let status = try await cloudKitService.checkAccountStatus()
-                await MainActor.run {
-                    isCloudKitAvailable = (status == .available)
-                }
-            } catch {
-                print("CloudKit not available: \(error)")
-            }
         }
     }
 }

@@ -11,7 +11,6 @@ struct FamilyFeastApp: App {
 
     /// Services
     @State private var aiService: AIService?
-    @State private var spoonacularService: SpoonacularService?
     @State private var cloudKitService: CloudKitService
 
     // MARK: - Initialization
@@ -53,8 +52,19 @@ struct FamilyFeastApp: App {
             fatalError("Failed to initialize SwiftData container: \(error)")
         }
 
-        // Initialize AI services (will be configured after checking for API keys)
-        // These will be set up in the ContentView's onAppear
+        // Configure AI service
+        #if DEBUG
+        let openAIKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
+        #else
+        let openAIKey = "" // Load from keychain or secure storage
+        #endif
+
+        if !openAIKey.isEmpty {
+            aiService = AIService(apiKey: openAIKey)
+            print("✅ AI Service configured")
+        } else {
+            print("⚠️ OpenAI API key not found")
+        }
     }
 
     // MARK: - Body
@@ -65,42 +75,9 @@ struct FamilyFeastApp: App {
                 .modelContainer(modelContainer)
                 .environment(\.cloudKitService, cloudKitService)
                 .environment(\.aiService, aiService)
-                .onAppear {
-                    configureServices()
-                }
         }
     }
 
-    // MARK: - Private Methods
-
-    private func configureServices() {
-        // Load API keys from configuration
-        // In production, these would come from a secure configuration system
-
-        #if DEBUG
-        // Development keys (replace with your actual keys)
-        let openAIKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
-        let spoonacularKey = ProcessInfo.processInfo.environment["SPOONACULAR_API_KEY"] ?? ""
-        #else
-        // Production keys should be fetched securely
-        let openAIKey = "" // Load from keychain or secure storage
-        let spoonacularKey = "" // Load from keychain or secure storage
-        #endif
-
-        if !openAIKey.isEmpty {
-            aiService = AIService(apiKey: openAIKey)
-            print("✅ AI Service configured")
-        } else {
-            print("⚠️ OpenAI API key not found")
-        }
-
-        if !spoonacularKey.isEmpty {
-            spoonacularService = SpoonacularService(apiKey: spoonacularKey)
-            print("✅ Spoonacular Service configured")
-        } else {
-            print("⚠️ Spoonacular API key not found")
-        }
-    }
 }
 
 // MARK: - Environment Keys
@@ -115,11 +92,6 @@ private struct AIServiceKey: EnvironmentKey {
     static let defaultValue: AIService? = nil
 }
 
-/// Environment key for Spoonacular service
-private struct SpoonacularServiceKey: EnvironmentKey {
-    static let defaultValue: SpoonacularService? = nil
-}
-
 extension EnvironmentValues {
     var cloudKitService: CloudKitService {
         get { self[CloudKitServiceKey.self] }
@@ -129,10 +101,5 @@ extension EnvironmentValues {
     var aiService: AIService? {
         get { self[AIServiceKey.self] }
         set { self[AIServiceKey.self] = newValue }
-    }
-
-    var spoonacularService: SpoonacularService? {
-        get { self[SpoonacularServiceKey.self] }
-        set { self[SpoonacularServiceKey.self] = newValue }
     }
 }

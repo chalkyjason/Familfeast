@@ -13,9 +13,17 @@ struct OnboardingView: View {
     @Binding var isPresented: Bool
     let onComplete: (FamilyGroup) -> Void
 
+    // MARK: - Types
+
+    private enum OnboardingStep: Int, CaseIterable {
+        case welcome = 0
+        case setupFamily = 1
+        case completion = 2
+    }
+
     // MARK: - State
 
-    @State private var currentStep = 0
+    @State private var currentStep: OnboardingStep = .welcome
     @State private var familyName = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -26,16 +34,16 @@ struct OnboardingView: View {
         NavigationStack {
             VStack(spacing: 24) {
                 // Progress indicator
-                ProgressView(value: Double(currentStep), total: 2)
+                ProgressView(value: Double(currentStep.rawValue), total: 2)
                     .padding(.horizontal)
 
                 Group {
                     switch currentStep {
-                    case 0:
+                    case .welcome:
                         welcomeStep
-                    case 1:
+                    case .setupFamily:
                         setupFamilyStep
-                    default:
+                    case .completion:
                         completionStep
                     }
                 }
@@ -63,119 +71,123 @@ struct OnboardingView: View {
     // MARK: - Steps
 
     private var welcomeStep: some View {
-        VStack(spacing: 32) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 24) {
+                Image(systemName: "fork.knife.circle.fill")
+                    .font(.system(size: 80))
+                    .foregroundStyle(.blue.gradient)
+                    .padding(.top, 20)
 
-            Image(systemName: "fork.knife.circle.fill")
-                .font(.system(size: 100))
-                .foregroundStyle(.blue.gradient)
+                Text("FamilyFeast")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
 
-            Text("FamilyFeast")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                Text("Collaborative meal planning made easy")
+                    .font(.title3)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
 
-            Text("Collaborative meal planning made easy")
-                .font(.title3)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 14) {
+                    FeatureRow(
+                        icon: "person.3.fill",
+                        title: "Family Voting",
+                        description: "Everyone gets a say in what's for dinner"
+                    )
 
-            Spacer()
+                    FeatureRow(
+                        icon: "cart.fill",
+                        title: "Smart Shopping Lists",
+                        description: "Automatically generated with budget tracking"
+                    )
 
-            VStack(alignment: .leading, spacing: 16) {
-                FeatureRow(
-                    icon: "person.3.fill",
-                    title: "Family Voting",
-                    description: "Everyone gets a say in what's for dinner"
-                )
+                    FeatureRow(
+                        icon: "sparkles",
+                        title: "AI Suggestions",
+                        description: "Get personalized recipe recommendations"
+                    )
 
-                FeatureRow(
-                    icon: "cart.fill",
-                    title: "Smart Shopping Lists",
-                    description: "Automatically generated with budget tracking"
-                )
-
-                FeatureRow(
-                    icon: "sparkles",
-                    title: "AI Suggestions",
-                    description: "Get personalized recipe recommendations"
-                )
-
-                FeatureRow(
-                    icon: "calendar",
-                    title: "Meal Scheduling",
-                    description: "Plan your week with drag-and-drop calendar"
-                )
-            }
-            .padding()
-            .background(.regularMaterial)
-            .cornerRadius(16)
-            .padding(.horizontal)
-
-            Spacer()
-
-            Button(action: {
-                withAnimation {
-                    currentStep = 1
+                    FeatureRow(
+                        icon: "calendar",
+                        title: "Meal Scheduling",
+                        description: "Plan your week with drag-and-drop calendar"
+                    )
                 }
-            }) {
-                Text("Get Started")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.blue.gradient)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal)
-        }
-    }
-
-    private var setupFamilyStep: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            Image(systemName: "house.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(.green.gradient)
-
-            Text("Create Your Family Group")
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Text("Give your family group a name. You can invite members later.")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+                .padding()
+                .background(.regularMaterial)
+                .cornerRadius(16)
                 .padding(.horizontal)
 
-            TextField("Family Name", text: $familyName)
-                .textFieldStyle(.roundedBorder)
-                .padding(.horizontal)
-                .autocorrectionDisabled()
-
-            Spacer()
-
-            HStack(spacing: 16) {
-                Button("Back") {
+                Button(action: {
                     withAnimation {
-                        currentStep = 0
+                        currentStep = .setupFamily
                     }
-                }
-                .buttonStyle(.bordered)
-
-                Button(action: createFamilyGroup) {
-                    Text("Create Family")
+                }) {
+                    Text("Get Started")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(familyName.isEmpty ? Color.gray : Color.green)
+                        .background(.blue.gradient)
                         .cornerRadius(12)
                 }
-                .disabled(familyName.isEmpty)
+                .padding(.horizontal)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal)
+        }
+    }
+
+    private var setupFamilyStep: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                Image(systemName: "house.fill")
+                    .font(.system(size: 80))
+                    .foregroundStyle(.green.gradient)
+                    .padding(.top, 40)
+
+                Text("Create Your Family Group")
+                    .font(.title2)
+                    .fontWeight(.bold)
+
+                Text("Give your family group a name. You can invite members later.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                TextField("Family Name", text: $familyName)
+                    .padding(12)
+                    .background(Color.gray.opacity(0.15))
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                    .autocorrectionDisabled()
+
+                HStack(spacing: 16) {
+                    Button("Back") {
+                        withAnimation {
+                            currentStep = .welcome
+                        }
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button(action: createFamilyGroup) {
+                        Text("Create Family")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(familyName.isEmpty ? Color.gray : Color.green)
+                            .cornerRadius(12)
+                    }
+                    .disabled(familyName.isEmpty)
+                }
+                .padding(.horizontal)
+                .padding(.top, 20)
+            }
         }
     }
 
@@ -258,7 +270,7 @@ struct OnboardingView: View {
             await MainActor.run {
                 isLoading = false
                 withAnimation {
-                    currentStep = 2
+                    currentStep = .completion
                 }
                 onComplete(group)
             }

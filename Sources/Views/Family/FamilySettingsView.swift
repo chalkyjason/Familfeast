@@ -17,6 +17,7 @@ struct FamilySettingsView: View {
 
     @State private var showingInviteSheet = false
     @State private var showingShareSheet = false
+    @State private var showingDeleteConfirmation = false
     @State private var isCloudKitAvailable = false
     @State private var errorMessage: String?
 
@@ -81,6 +82,7 @@ struct FamilySettingsView: View {
                     Image(systemName: "pencil")
                         .foregroundColor(.blue)
                 }
+                .disabled(true)
             }
         } header: {
             Text("Family Group")
@@ -165,13 +167,29 @@ struct FamilySettingsView: View {
             Button(action: {}) {
                 Label("Export Data", systemImage: "square.and.arrow.up")
             }
+            .disabled(true)
 
             Button(action: {}) {
                 Label("Sync Status", systemImage: "arrow.triangle.2.circlepath")
             }
+            .disabled(true)
 
-            Button(role: .destructive, action: {}) {
-                Label("Clear Local Cache", systemImage: "trash")
+            Button(role: .destructive, action: {
+                showingDeleteConfirmation = true
+            }) {
+                Label("Delete Family Group", systemImage: "trash")
+            }
+            .confirmationDialog(
+                "Delete Family Group?",
+                isPresented: $showingDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Everything", role: .destructive) {
+                    deleteFamilyGroup()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will delete your family group, all members, recipes, meal plans, and shopping lists. This cannot be undone.")
             }
         }
     }
@@ -196,10 +214,31 @@ struct FamilySettingsView: View {
             Button(action: {}) {
                 Label("Send Feedback", systemImage: "envelope")
             }
+            .disabled(true)
         }
     }
 
     // MARK: - Methods
+
+    private func deleteFamilyGroup() {
+        guard let group = familyGroup else { return }
+
+        // Delete members
+        if let members = group.members {
+            for member in members {
+                modelContext.delete(member)
+            }
+        }
+
+        // Delete the group
+        modelContext.delete(group)
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to delete family group: \(error)")
+        }
+    }
 
     private func checkCloudKitStatus() {
         Task {
@@ -335,23 +374,15 @@ struct InviteFamilyMemberView: View {
         isLoading = true
 
         Task {
-            do {
-                // In a real implementation, this would:
-                // 1. Create a CKShare
-                // 2. Add the participant
-                // 3. Send the invitation via CloudKit
+            // In a real implementation, this would:
+            // 1. Create a CKShare
+            // 2. Add the participant
+            // 3. Send the invitation via CloudKit
 
-                // For now, just show success
-                await MainActor.run {
-                    isLoading = false
-                    dismiss()
-                }
-
-            } catch {
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = "Failed to send invitation: \(error.localizedDescription)"
-                }
+            // For now, just show success
+            await MainActor.run {
+                isLoading = false
+                dismiss()
             }
         }
     }

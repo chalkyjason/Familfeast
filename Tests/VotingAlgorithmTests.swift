@@ -6,19 +6,15 @@ import SwiftData
 final class VotingAlgorithmTests: XCTestCase {
 
     var modelContainer: ModelContainer!
-    var modelContext: ModelContext!
 
     override func setUp() async throws {
         // Create in-memory container for testing
-        let schema = Schema([Recipe.self, Vote.self, FamilyMember.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        modelContainer = try ModelContainer(for: schema, configurations: [configuration])
-        modelContext = modelContainer.mainContext
+        modelContainer = try ModelContainer(for: Recipe.self, Vote.self, FamilyMember.self, configurations: [configuration])
     }
 
     override func tearDown() async throws {
         modelContainer = nil
-        modelContext = nil
     }
 
     // MARK: - Borda Count Tests

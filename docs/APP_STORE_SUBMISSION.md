@@ -56,8 +56,8 @@ description: |
 keywords: meal planning,family,recipes,voting,shopping list,dinner,cooking,weekly meals,diet,CloudKit
 whats_new: Initial release.
 promo_text: Turn "What's for dinner?" into a family vote. Plan meals together, shop smarter, and cook with confidence.
-support_url: https://chalkyjason.github.io/Familfeast
-marketing_url: https://chalkyjason.github.io/Familfeast
+support_url: https://chalkyjason.github.io/MyWebsite/projects/familyfeast/support
+marketing_url: https://chalkyjason.github.io/MyWebsite/projects/familyfeast/
 
 ## Screenshots
 
@@ -99,7 +99,7 @@ pre_order: false
 
 ## Privacy
 
-privacy_url: https://chalkyjason.github.io/Familfeast/privacy
+privacy_url: https://chalkyjason.github.io/MyWebsite/projects/familyfeast/privacy-policy
 data_collected: User ID
 
 ## Compliance

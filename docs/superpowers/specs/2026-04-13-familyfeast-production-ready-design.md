@@ -11,20 +11,17 @@
 ### Current Stack (Keep)
 
 - **UI:** SwiftUI
-- **Persistence:** SwiftData — all data stays on-device
+- **Persistence:** SwiftData (iOS 17+) — all data stays on-device
 - **Family Sync:** CloudKit (free, encrypted, Apple-hosted)
-- **AI:** Apple Foundation Models (on-device LLM, iOS 26+) — replaces OpenAI entirely
-- **Minimum Deployment:** iOS 26 (required for Foundation Models framework)
+- **Minimum Deployment:** iOS 17
 - **Dependencies:** Zero third-party packages (except AdMob SDK, to be added)
+- **AI:** Deferred to future release (remove existing OpenAI code for now)
 
 ### Changes
 
 | Area | Current | Target |
 |------|---------|--------|
-| AI engine | OpenAI GPT-4o-mini (cloud API) | Apple Foundation Models (on-device, free) |
-| API key storage | Environment variables | Eliminated — no API keys needed |
-| AI access | Unrestricted | Free: 3/week, Premium: unlimited |
-| Deployment target | iOS 17 | iOS 26 (for Foundation Models) |
+| AI | OpenAI GPT-4o-mini (cloud API) | Removed for v1 (add later as premium feature) |
 | Ads | None | Google AdMob banners on Dashboard + RecipeListView |
 | Subscriptions | None | StoreKit 2 ($4.99/mo or $39.99/yr) |
 | Error handling | Logged to console | User-facing alerts |
@@ -78,7 +75,7 @@
 - No RevenueCat — StoreKit 2 handles everything natively
 
 **Paywall UI:**
-- Present when user hits a premium gate (51st recipe, 4th AI suggestion, etc.)
+- Present when user hits a premium gate (51st recipe, 3rd meal session, etc.)
 - Show feature comparison table (free vs premium)
 - Highlight annual savings
 - "Restore Purchases" button prominently displayed
@@ -90,7 +87,6 @@
 |---------|------|---------|
 | Family voting | Unlimited | Unlimited |
 | Recipes | Up to 50 | Unlimited |
-| AI suggestions (on-device) | 3/week | Unlimited |
 | Active meal sessions | 2 | Unlimited |
 | Active shopping lists | 1 | Unlimited |
 | Ads | Banner ads | Ad-free |
@@ -102,8 +98,6 @@
 | Recipe image upload | No | Yes |
 
 **Usage Tracking (for free-tier limits):**
-- Store `aiSuggestionsUsedThisWeek` and `weekStartDate` in SwiftData
-- Reset count when current date > weekStartDate + 7 days
 - Recipe count checked via `@Query` count
 - Session/list counts checked via `@Query` with active status filter
 
@@ -133,22 +127,18 @@
 **3.1.3 Remove DashboardView 2.swift**
 - Delete `Sources/Views/Dashboard/DashboardView 2.swift` (duplicate artifact)
 
-**3.1.4 Replace OpenAI with Apple Foundation Models**
-- Rewrite `AIService` to use `FoundationModels` framework instead of OpenAI HTTP API
-- Use `LanguageModelSession` for text generation (recipe suggestions, ingredient parsing, meal plans)
-- Use `@Generable` macro on response structs for structured output (typed recipe suggestions)
-- Add `SystemPrompt` with FamilyFeast context (dietary restrictions, cuisine preferences, budget)
-- Use `GenerationOptions` to control temperature/token limits per use case
-- Check device capability with `SystemLanguageModel.default.availability` before showing AI features
-- Handle `.notAvailable` gracefully — show "AI requires iPhone 16 or newer" message
-- Remove OpenAI API key references, `URLSession` calls, and `API_CONFIGURATION.md`
-- Delete `KeychainService` requirement (no API keys needed)
-- Bump deployment target to iOS 26 in Package.swift and project settings
-- **Result:** Zero API costs, zero network dependency for AI, data never leaves device
+**3.1.4 Remove AI Code (Deferred to Future Release)**
+- Delete `Sources/Services/AIService.swift`
+- Delete `Sources/Views/Recipe/AISuggestionsView.swift`
+- Remove AI-related environment keys from `FamilyFeastApp.swift`
+- Remove "AI Suggestions" navigation/buttons from DashboardView and any other views
+- Delete `API_CONFIGURATION.md`
+- Keep recipe models and ingredient parsing (these work without AI)
+- **Future:** AI features can be added back later as a premium feature
 
 **3.1.5 Free-Tier Limits**
-- Add `UsageTracker` model to SwiftData (aiUsageCount, weekStart, recipeCount checks)
-- Enforce limits in AIService calls and recipe creation (on-device AI is free to run, but limit keeps premium attractive)
+- Add `UsageTracker` model to SwiftData (recipeCount, sessionCount, listCount checks)
+- Enforce limits in recipe creation, session creation, list creation
 - Show paywall when limit hit
 
 **3.1.6 Fix Stubbed Features**
@@ -161,7 +151,7 @@
 
 **3.1.7 Error Handling UI**
 - Create reusable `.errorAlert(error:)` view modifier
-- Surface network errors, CloudKit failures, AI service errors as user-facing alerts
+- Surface network errors and CloudKit failures as user-facing alerts
 - Add retry buttons where appropriate
 
 **3.1.8 Input Validation**
@@ -188,7 +178,6 @@
 
 **3.2.3 Loading States**
 - Add `ProgressView` or skeleton views for:
-  - AI suggestion generation
   - CloudKit sync operations
   - Recipe list initial load
   - Shopping list creation from meal session
@@ -201,13 +190,13 @@
 - Minimum touch targets (44x44pt) on all interactive elements
 
 **3.2.5 Onboarding Improvements**
-- Add feature highlight pages (voting, AI, shopping lists)
+- Add feature highlight pages (voting, meal planning, shopping lists)
 - Brief explanation of voting types (superlike through veto)
 - Optional dietary restriction setup during onboarding
 
 **3.2.6 Analytics (Privacy-Respecting)**
 - Track feature usage counts locally in SwiftData (not sent anywhere)
-- Metrics: recipes created, votes cast, AI suggestions used, sessions completed
+- Metrics: recipes created, votes cast, sessions completed, shopping lists used
 - Used to inform product decisions, shown in a developer-only debug screen
 - No third-party analytics SDK
 
@@ -237,9 +226,9 @@
 
 **3.3.4 Smart Variety Engine**
 - Track last 30 days of scheduled meals
-- AI suggestions exclude recently cooked recipes
 - Voting algorithm weights down recently eaten cuisines
 - "Try something new" mode that boosts unfamiliar cuisines
+- Surface under-cooked recipes from family's collection
 
 **3.3.5 Drag-and-Drop Meal Calendar**
 - Replace static weekly view with interactive calendar
@@ -260,13 +249,13 @@
 
 ### FamilyFeast Differentiators
 
-1. **Only native iOS app with AI + family voting + per-member dietary profiles**
+1. **Only native iOS app with family voting + per-member dietary profiles**
 2. **5-tier voting with Borda Count + Schulze consensus** (most sophisticated in market)
 3. **Per-member allergens and cuisine preferences** (competitors do household-level)
 4. **Child roles** with age-appropriate permissions (unique)
-5. **Privacy-first** — iCloud ecosystem only, no third-party servers, AI runs on-device
-6. **Offline-first** — works in grocery stores with no signal (including AI suggestions)
-7. **Zero API costs** — on-device AI means no per-user backend costs
+5. **Privacy-first** — iCloud ecosystem only, no third-party servers
+6. **Offline-first** — works in grocery stores with no signal
+7. **Zero infrastructure costs** — no backend servers, no API costs
 8. **Undercuts Ollie by 50%** ($4.99 vs $9.99/mo)
 
 ### Positioning Statement
@@ -283,7 +272,7 @@ Against Mealime/Paprika: "They plan for one person. We plan for your whole famil
 |------------|--------------------------|
 | "One person decides, everyone else complains" | Democratic voting with consensus algorithm |
 | "My kid is allergic but my spouse isn't" | Per-member dietary profiles |
-| "Same meals every week" | AI variety + voting history tracking |
+| "Same meals every week" | Voting history + variety engine (future) |
 | "App doesn't work in the grocery store" | Offline-first with SwiftData |
 | "I don't trust where my data goes" | iCloud only, no third-party servers |
 | "Too expensive for a meal app" | Generous free tier, premium at $4.99/mo |
@@ -298,7 +287,6 @@ Against Mealime/Paprika: "They plan for one person. We plan for your whole famil
 |------|----------------|---------------|-----------|
 | Data storage | SwiftData (on-device) | SwiftData + CloudKit | $0 (Apple free tier) |
 | Family sync | CloudKit | CloudKit | $0 (1PB free) |
-| AI suggestions | On-device (Foundation Models) | On-device (Foundation Models) | $0 (runs on user's hardware) |
 | Ad revenue | ~$1-3 eCPM | N/A (ad-free) | Revenue, not cost |
 | App Store | — | 15-30% cut of subscriptions | Percentage, not fixed cost |
 
@@ -312,8 +300,6 @@ At 1,000 premium subscribers ($4.99/mo, Apple takes 15% after year 1):
 
 Ad revenue from free users (assuming 10K MAU, 2 ad impressions/session, $2 eCPM):
 - Monthly: ~$400-800
-
-**AI cost at scale: $0.** On-device AI runs on the user's iPhone — no API calls, no tokens to pay for, scales infinitely with zero marginal cost.
 
 ---
 
@@ -329,7 +315,7 @@ Ad revenue from free users (assuming 10K MAU, 2 ad impressions/session, $2 eCPM)
 - [ ] ATT usage description
 - [ ] Age rating (4+ — family app)
 - [ ] In-app purchase configuration in App Store Connect
-- [ ] Review notes for Apple (explain AI features, family sharing)
+- [ ] Review notes for Apple (explain family sharing via CloudKit)
 - [ ] Bundle ID and signing configured
 - [ ] Minimum deployment target: iOS 17.0
 
@@ -370,16 +356,16 @@ Sources/
 Sources/App/FamilyFeastApp.swift          — Add AdMob init, SubscriptionManager env
 Sources/Views/Dashboard/DashboardView.swift — Add ad banner, premium gates
 Sources/Views/Recipe/RecipeListView.swift   — Add ad banner
-Sources/Views/Recipe/AISuggestionsView.swift — Add usage limit check
 Sources/Views/Recipe/AddRecipeView.swift    — Add recipe count check, image picker
 Sources/Views/Family/FamilySettingsView.swift — Fix stubbed buttons, add subscription
-Sources/Services/AIService.swift            — Rewrite to use Foundation Models (remove OpenAI)
-Package.swift                               — Add Google Mobile Ads dependency, bump to iOS 26
+Package.swift                               — Add Google Mobile Ads dependency
 ```
 
 ### Files to Delete
 
 ```
 Sources/Views/Dashboard/DashboardView 2.swift  — Duplicate artifact
+Sources/Services/AIService.swift                — Deferred to future release
+Sources/Views/Recipe/AISuggestionsView.swift     — Deferred to future release
 API_CONFIGURATION.md                            — No longer needed (no external APIs)
 ```

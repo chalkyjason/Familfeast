@@ -145,3 +145,9 @@ Temporary Items
 *.gcda
 *.gcno
 *.profdata
+
+# Build output
+build_output/
+
+# Playwright MCP
+.playwright-mcp/

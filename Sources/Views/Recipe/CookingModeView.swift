@@ -28,7 +28,7 @@ struct CookingModeView: View {
         VStack(spacing: 0) {
             // Progress bar
             ProgressView(value: Double(currentStep + 1), total: Double(max(steps.count, 1)))
-                .tint(.blue)
+                .tint(Theme.primary)
                 .padding(.horizontal)
                 .padding(.top, 8)
 
@@ -66,10 +66,10 @@ struct CookingModeView: View {
                         Text("Previous")
                     }
                     .font(.headline)
-                    .foregroundColor(currentStep > 0 ? .blue : .gray)
+                    .foregroundColor(currentStep > 0 ? Theme.primary : .gray)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(currentStep > 0 ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
+                    .background(currentStep > 0 ? Theme.primary.opacity(0.1) : Color.gray.opacity(0.1))
                     .cornerRadius(12)
                 }
                 .disabled(currentStep <= 0)
@@ -84,7 +84,7 @@ struct CookingModeView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue.gradient)
+                        .background(Theme.primary.gradient)
                         .cornerRadius(12)
                     }
                 } else {
@@ -132,9 +132,17 @@ struct CookingModeView: View {
         }
         .onAppear {
             steps = parseSteps(from: recipe.instructions)
+            // Prevent screen from sleeping while cooking
+            #if os(iOS)
+            UIApplication.shared.isIdleTimerDisabled = true
+            #endif
         }
         .onDisappear {
             stopTimer()
+            // Re-enable screen sleeping when leaving
+            #if os(iOS)
+            UIApplication.shared.isIdleTimerDisabled = false
+            #endif
         }
     }
 

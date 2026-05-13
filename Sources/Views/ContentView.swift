@@ -14,6 +14,7 @@ struct ContentView: View {
     // MARK: - Environment
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.authService) private var authService
 
     // MARK: - State
 
@@ -29,7 +30,9 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if showingOnboarding || currentFamilyGroup == nil {
+            if !authService.isSignedIn {
+                SignInView()
+            } else if showingOnboarding || (currentFamilyGroup == nil && familyGroups.isEmpty) {
                 OnboardingView(
                     isPresented: $showingOnboarding,
                     onComplete: { group in
@@ -43,6 +46,9 @@ struct ContentView: View {
         }
         .onAppear {
             checkSetup()
+        }
+        .task {
+            await authService.checkCredentialState()
         }
     }
 

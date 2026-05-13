@@ -48,7 +48,7 @@ struct OnboardingView: View {
                     }
                 }
             }
-            .navigationTitle("Welcome to FamilyFeast")
+            .navigationTitle("Welcome to MealMeld")
             .navigationBarTitleDisplayMode(.inline)
             .overlay {
                 if isLoading {
@@ -78,7 +78,7 @@ struct OnboardingView: View {
                     .foregroundStyle(.blue.gradient)
                     .padding(.top, 20)
 
-                Text("FamilyFeast")
+                Text("MealMeld")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 

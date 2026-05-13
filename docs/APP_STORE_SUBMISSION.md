@@ -2,8 +2,8 @@
 
 ## App
 
-bundle_id: com.familyfeast.app
-name: FamilyFeast
+bundle_id: com.mealmeld.app
+name: MealMeld
 subtitle: Family Meal Planning
 platform: ios
 version: 1.0.0
@@ -31,7 +31,7 @@ unrestricted_web: no
 ### English (en-US)
 
 description: |
-  FamilyFeast transforms meal planning from a solo chore into a fun, collaborative family activity. Stop arguing about what's for dinner and start voting on it.
+  MealMeld transforms meal planning from a solo chore into a fun, collaborative family activity. Stop arguing about what's for dinner and start voting on it.
 
   Every family member gets a voice with our democratic voting system. Swipe right on meals you love, left on ones you don't, and let the Borda Count consensus algorithm pick dishes that make everyone happy -- no more one person deciding for the whole family.
 
@@ -51,13 +51,13 @@ description: |
 
   - Budget Management: Estimate costs per recipe and per meal plan, track actual spending versus estimates, and get alerts when you're approaching your limit.
 
-  FamilyFeast is built with privacy in mind. All data is stored locally first, with optional iCloud sync using Apple's end-to-end encryption. No accounts to create, no tracking, no ads.
+  MealMeld is built with privacy in mind. All data is stored locally first, with optional iCloud sync using Apple's end-to-end encryption. No accounts to create, no tracking, no ads.
 
 keywords: meal planning,family,recipes,voting,shopping list,dinner,cooking,weekly meals,diet,CloudKit
 whats_new: Initial release.
 promo_text: Turn "What's for dinner?" into a family vote. Plan meals together, shop smarter, and cook with confidence.
-support_url: https://chalkyjason.github.io/MyWebsite/projects/familyfeast/support
-marketing_url: https://chalkyjason.github.io/MyWebsite/projects/familyfeast/
+support_url: https://chalkyjason.github.io/MyWebsite/projects/mealmeld/support
+marketing_url: https://chalkyjason.github.io/MyWebsite/projects/mealmeld/
 
 ## Screenshots
 
@@ -79,7 +79,7 @@ last_name: chalkyjason
 phone: +1 (234) 228-5103
 email: chalkyjason@gmail.com
 notes: |
-  FamilyFeast is a meal planning app for families. To test the core flow:
+  MealMeld is a meal planning app for families. To test the core flow:
   1. Launch the app and complete onboarding (name your family group).
   2. Add a few recipes manually from the Recipes tab.
   3. Create a voting session from the Meal Planning tab.
@@ -99,7 +99,7 @@ pre_order: false
 
 ## Privacy
 
-privacy_url: https://chalkyjason.github.io/MyWebsite/projects/familyfeast/privacy-policy
+privacy_url: https://chalkyjason.github.io/MyWebsite/projects/mealmeld/privacy-policy
 data_collected: User ID
 
 ## Compliance

@@ -15,12 +15,19 @@ struct AISuggestionsView: View {
 
     // MARK: - State
 
+    enum ViewState {
+        case idle
+        case loading(String)
+        case error(AppError)
+        case success
+    }
+
+    @State private var viewState: ViewState = .idle
     @State private var promptText = ""
     @State private var ingredientsText = ""
     @State private var suggestions: [RecipeSuggestion] = []
-    @State private var isLoading = false
-    @State private var errorMessage: String?
     @State private var savedTitles: Set<String> = []
+    @State private var activeError: AppError?
 
     // MARK: - Body
 
@@ -31,25 +38,10 @@ struct AISuggestionsView: View {
                     // Input section
                     inputSection
 
-                    // Error
-                    if let error = errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-
                     // Results
-                    if isLoading {
-                        VStack(spacing: 12) {
-                            ProgressView()
-                            Text("Getting AI suggestions...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.top, 40)
-                    } else if !suggestions.isEmpty {
+                    if !suggestions.isEmpty {
                         suggestionsSection
-                    } else {
+                    } else if case .idle = viewState {
                         emptyState
                     }
                 }
@@ -62,7 +54,27 @@ struct AISuggestionsView: View {
                     Button("Close") { dismiss() }
                 }
             }
+            .loadingOverlay(isShowing: isLoading, message: loadingMessage)
+            .alert(item: $activeError) { error in
+                Alert(
+                    title: Text("Error"),
+                    message: Text(error.localizedDescription),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
+    }
+
+    // MARK: - Computed Properties
+
+    private var isLoading: Bool {
+        if case .loading = viewState { return true }
+        return false
+    }
+
+    private var loadingMessage: String {
+        if case .loading(let message) = viewState { return message }
+        return "Loading..."
     }
 
     // MARK: - Subviews
@@ -224,13 +236,12 @@ struct AISuggestionsView: View {
 
     private func getSuggestions() {
         guard let aiService = aiService else {
-            errorMessage = "AI service is not configured"
+            activeError = .auth("AI service is not configured")
             return
         }
 
-        isLoading = true
-        errorMessage = nil
-
+        viewState = .loading("Consulting AI Chef...")
+        
         let prompt = promptText.trimmingCharacters(in: .whitespaces)
         let ingredients = ingredientsText
             .split(separator: ",")
@@ -241,9 +252,7 @@ struct AISuggestionsView: View {
             do {
                 let results: [RecipeSuggestion]
                 if ingredients.isEmpty {
-                    // Use description-based generation
-                    let single = try await aiService.generateRecipeFromDescription(prompt)
-                    results = [single]
+                    results = [try await aiService.generateRecipeFromDescription(prompt)]
                 } else {
                     results = try await aiService.suggestRecipes(
                         availableIngredients: ingredients,
@@ -252,13 +261,18 @@ struct AISuggestionsView: View {
                 }
 
                 await MainActor.run {
-                    isLoading = false
+                    viewState = .success
                     suggestions = results
+                }
+            } catch let error as AIServiceError {
+                await MainActor.run {
+                    viewState = .idle
+                    activeError = .ai(error)
                 }
             } catch {
                 await MainActor.run {
-                    isLoading = false
-                    errorMessage = "Failed to get suggestions: \(error.localizedDescription)"
+                    viewState = .idle
+                    activeError = .unknown(error)
                 }
             }
         }

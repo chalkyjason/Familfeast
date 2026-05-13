@@ -6,6 +6,8 @@ struct DashboardView: View {
     // MARK: - Environment
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.cloudKitService) private var cloudKitService
+    @Environment(\.authService) private var authService
 
     // MARK: - Properties
 
@@ -33,6 +35,9 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
+                    // Sync Status
+                    syncStatusHeader
+
                     // Welcome header
                     welcomeHeader
 
@@ -59,18 +64,28 @@ struct DashboardView: View {
                 }
                 .padding()
             }
-            .navigationTitle("FamilyFeast")
+            .navigationTitle("MealMeld")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: { showingNewSessionSheet = true }) {
-                            Label("New Meal Session", systemImage: "plus.circle")
+                    HStack(spacing: 12) {
+                        Menu {
+                            Button(action: { showingNewSessionSheet = true }) {
+                                Label("New Meal Session", systemImage: "plus.circle")
+                            }
+                            Button(action: { showingAddRecipe = true }) {
+                                Label("Add Recipe", systemImage: "book")
+                            }
+                        } label: {
+                            Image(systemName: "plus")
                         }
-                        Button(action: { showingAddRecipe = true }) {
-                            Label("Add Recipe", systemImage: "book")
+                        
+                        Menu {
+                            Button(role: .destructive, action: { authService.signOut() }) {
+                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            }
+                        } label: {
+                            Image(systemName: "person.circle")
                         }
-                    } label: {
-                        Image(systemName: "plus")
                     }
                 }
             }
@@ -86,6 +101,25 @@ struct DashboardView: View {
     }
 
     // MARK: - Subviews
+
+    private var syncStatusHeader: some View {
+        HStack {
+            Spacer()
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(cloudKitService.isAvailable ? Color.green : Color.gray)
+                    .frame(width: 8, height: 8)
+                Text(cloudKitService.isAvailable ? "Cloud Synced" : "Local Only")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .padding(.bottom, -12)
+    }
 
     private var welcomeHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -106,7 +140,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "calendar")
-                    .foregroundColor(.blue)
+                    .foregroundColor(Theme.primary)
 
                 Text("Active Meal Plan")
                     .font(.headline)
@@ -117,8 +151,8 @@ struct DashboardView: View {
                     .font(.caption)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(.blue.opacity(0.1))
-                    .foregroundColor(.blue)
+                    .background(Theme.primary.opacity(0.1))
+                    .foregroundColor(Theme.primary)
                     .cornerRadius(8)
             }
 
@@ -153,10 +187,10 @@ struct DashboardView: View {
                     Text("View Details")
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(.blue.opacity(0.1))
+                        .background(Theme.primary.gradient)
                         .cornerRadius(10)
                 }
             }
@@ -169,7 +203,7 @@ struct DashboardView: View {
             QuickActionCard(
                 title: "Vote on Meals",
                 icon: "hand.thumbsup.fill",
-                color: .green
+                color: Theme.primary
             ) {
                 selectedTab = .plan
             }
@@ -177,7 +211,7 @@ struct DashboardView: View {
             QuickActionCard(
                 title: "Add Recipe",
                 icon: "plus.circle.fill",
-                color: .blue
+                color: Theme.secondary
             ) {
                 showingAddRecipe = true
             }
@@ -185,7 +219,7 @@ struct DashboardView: View {
             QuickActionCard(
                 title: "Shopping List",
                 icon: "cart.fill",
-                color: .orange
+                color: Theme.primary
             ) {
                 selectedTab = .shopping
             }
@@ -193,7 +227,7 @@ struct DashboardView: View {
             QuickActionCard(
                 title: "Family",
                 icon: "person.3.fill",
-                color: .purple
+                color: Theme.secondary
             ) {
                 selectedTab = .family
             }
@@ -219,7 +253,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "cart.fill")
-                    .foregroundColor(.orange)
+                    .foregroundColor(Theme.primary)
 
                 Text("Shopping List")
                     .font(.headline)
@@ -232,7 +266,7 @@ struct DashboardView: View {
             }
 
             ProgressView(value: list.completionPercentage() / 100.0)
-                .tint(.orange)
+                .tint(Theme.primary)
 
             Text("\(Int(list.completionPercentage()))% Complete")
                 .font(.caption)
@@ -242,10 +276,10 @@ struct DashboardView: View {
                 Text("Continue Shopping")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(.orange)
+                    .foregroundColor(Theme.primary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(.orange.opacity(0.1))
+                    .background(Theme.primary.opacity(0.1))
                     .cornerRadius(10)
             }
         }
@@ -254,29 +288,39 @@ struct DashboardView: View {
 
     private var statisticsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Your Stats")
-                .font(.headline)
+            HStack {
+                Text("Your Stats")
+                    .font(.headline)
+                
+                Spacer()
+                
+                NavigationLink(destination: BudgetDashboardView()) {
+                    Text("Budget Tracking")
+                        .font(.caption)
+                        .foregroundColor(Theme.primary)
+                }
+            }
 
             HStack(spacing: 12) {
                 StatCard(
                     value: "\(recentRecipes.count)",
                     label: "Recipes",
                     icon: "book.fill",
-                    color: .blue
+                    color: Theme.primary
                 )
 
                 StatCard(
                     value: "\(mealSessions.count)",
                     label: "Sessions",
                     icon: "calendar",
-                    color: .green
+                    color: Theme.secondary
                 )
 
                 StatCard(
                     value: "\(familyGroup?.members?.count ?? 0)",
                     label: "Members",
                     icon: "person.3.fill",
-                    color: .purple
+                    color: Theme.primary
                 )
             }
         }

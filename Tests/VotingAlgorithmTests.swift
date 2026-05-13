@@ -1,6 +1,6 @@
 import XCTest
 import SwiftData
-@testable import FamilyFeast
+@testable import MealMeld
 
 /// Unit tests for the VotingAlgorithm
 final class VotingAlgorithmTests: XCTestCase {
@@ -8,9 +8,9 @@ final class VotingAlgorithmTests: XCTestCase {
     var modelContainer: ModelContainer!
 
     override func setUp() async throws {
-        // Create in-memory container for testing
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        modelContainer = try ModelContainer(for: Recipe.self, Vote.self, FamilyMember.self, configurations: [configuration])
+        // Create in-memory container for testing with CloudKit disabled
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        modelContainer = try ModelContainer(for: Recipe.self, Vote.self, FamilyMember.self, configurations: configuration)
     }
 
     override func tearDown() async throws {

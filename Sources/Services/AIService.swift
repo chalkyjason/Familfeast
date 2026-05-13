@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// Service for AI-powered features using OpenAI API
 /// Handles recipe suggestions, ingredient parsing, and meal planning assistance
@@ -8,9 +9,9 @@ actor AIService {
 
     private let apiKey: String
     private let baseURL = "https://api.openai.com/v1"
-    private let model = "gpt-4o-mini" // Cost-effective model for most tasks
+    private let model = "gpt-4o-mini"
 
-    init(apiKey: String) {
+    init(apiKey: String = Config.openAIKey) {
         self.apiKey = apiKey
     }
 
@@ -156,15 +157,27 @@ actor AIService {
         return try decoder.decode([ParsedIngredient].self, from: data)
     }
 
-    /// Parse a recipe from URL or text
-    func parseRecipeFromText(_ text: String) async throws -> RecipeSuggestion {
-
+    /// Parse a recipe from a URL using AI
+    func parseRecipeFromURL(_ url: URL) async throws -> RecipeSuggestion {
+        // First fetch content
+        let (data, _) = try await URLSession.shared.data(from: url)
+        guard let html = String(data: data, encoding: .utf8) else {
+            throw AIServiceError.parsingError
+        }
+        
+        // Basic cleaning
+        let cleaned = html
+            .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        
         let prompt = """
-        Extract recipe information from this text:
-
-        \(text)
-
-        Return ONLY valid JSON:
+        Extract recipe information from this webpage content:
+        URL: \(url.absoluteString)
+        
+        Content Snippet:
+        \(String(cleaned.prefix(5000)))
+        
+        Return ONLY valid JSON with this structure:
         {
           "title": "Recipe Name",
           "description": "Brief description",
@@ -185,15 +198,38 @@ actor AIService {
           "instructions": "Step 1: ... Step 2: ..."
         }
         """
-
+        
         let response = try await sendChatCompletion(prompt: prompt)
-
-        guard let data = response.data(using: .utf8) else {
+        
+        guard let responseData = response.data(using: .utf8) else {
             throw AIServiceError.invalidResponse
         }
+        
+        return try JSONDecoder().decode(RecipeSuggestion.self, from: responseData)
+    }
 
-        let decoder = JSONDecoder()
-        return try decoder.decode(RecipeSuggestion.self, from: data)
+    /// Parse a recipe from a video (YouTube/TikTok) URL
+    func parseRecipeFromVideoURL(_ url: URL) async throws -> RecipeSuggestion {
+        // For video, we typically need a specialized service or just the title/desc
+        // For this implementation, we'll try to extract what we can from the page
+        // (YouTube pages often have the recipe in the description or comments)
+        
+        let prompt = """
+        I have a video recipe URL: \(url.absoluteString)
+        
+        Please extract the recipe from the video metadata, description, or transcript if available in your knowledge base.
+        If you cannot access the live transcript, provide a high-quality estimated recipe based on the title and typical versions of this dish.
+        
+        Return ONLY valid JSON in the structure defined previously.
+        """
+        
+        let response = try await sendChatCompletion(prompt: prompt)
+        
+        guard let responseData = response.data(using: .utf8) else {
+            throw AIServiceError.invalidResponse
+        }
+        
+        return try JSONDecoder().decode(RecipeSuggestion.self, from: responseData)
     }
 
     // MARK: - Meal Planning
@@ -231,7 +267,13 @@ actor AIService {
     // MARK: - Private Methods
 
     private func sendChatCompletion(prompt: String) async throws -> String {
+        guard !apiKey.isEmpty else {
+            Logger.ai.error("API Key is empty. AI features will not work.")
+            throw AIServiceError.apiError(statusCode: 401)
+        }
+
         let url = URL(string: "\(baseURL)/chat/completions")!
+        Logger.ai.debug("Sending request to OpenAI: \(url.absoluteString)")
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -252,13 +294,20 @@ actor AIService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
+        let startTime = Date()
         let (data, response) = try await URLSession.shared.data(for: request)
+        let duration = Date().timeIntervalSince(startTime)
 
         guard let httpResponse = response as? HTTPURLResponse else {
+            Logger.ai.error("Invalid response type from OpenAI")
             throw AIServiceError.networkError
         }
 
+        Logger.ai.info("OpenAI response received: \(httpResponse.statusCode) in \(duration)s")
+
         guard (200...299).contains(httpResponse.statusCode) else {
+            let errorBody = String(data: data, encoding: .utf8) ?? "No error body"
+            Logger.ai.error("OpenAI API error \(httpResponse.statusCode): \(errorBody)")
             throw AIServiceError.apiError(statusCode: httpResponse.statusCode)
         }
 

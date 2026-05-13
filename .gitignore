@@ -151,3 +151,6 @@ build_output/
 
 # Playwright MCP
 .playwright-mcp/
+
+# Local git worktrees
+.worktrees/

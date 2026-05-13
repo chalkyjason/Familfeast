@@ -20,6 +20,8 @@ struct RecipeListView: View {
     @State private var searchText = ""
     @State private var selectedFilter: RecipeFilter = .all
     @State private var showingAddRecipe = false
+    @State private var showingAISuggestions = false
+    @State private var showingURLImport = false
 
     // MARK: - Body
 
@@ -42,13 +44,31 @@ struct RecipeListView: View {
             .navigationTitle("Recipes")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddRecipe = true }) {
+                    Menu {
+                        Button(action: { showingAddRecipe = true }) {
+                            Label("Manual Add", systemImage: "pencil")
+                        }
+                        
+                        Button(action: { showingAISuggestions = true }) {
+                            Label("AI Suggestions", systemImage: "sparkles")
+                        }
+                        
+                        Button(action: { showingURLImport = true }) {
+                            Label("Import URL", systemImage: "link")
+                        }
+                    } label: {
                         Image(systemName: "plus")
                     }
                 }
             }
             .sheet(isPresented: $showingAddRecipe) {
                 AddRecipeView(familyGroup: familyGroup)
+            }
+            .sheet(isPresented: $showingAISuggestions) {
+                AISuggestionsView(familyGroup: familyGroup)
+            }
+            .sheet(isPresented: $showingURLImport) {
+                RecipeURLImportView(familyGroup: familyGroup)
             }
         }
     }
@@ -98,7 +118,9 @@ struct RecipeListView: View {
         List {
             ForEach(filteredRecipes) { recipe in
                 NavigationLink(destination: RecipeDetailView(recipe: recipe)) {
-                    RecipeRow(recipe: recipe)
+                    RecipeRowView(recipe: recipe) {
+                        toggleFavorite(recipe)
+                    }
                 }
             }
             .onDelete(perform: deleteRecipes)
@@ -165,58 +187,18 @@ struct RecipeListView: View {
             modelContext.delete(recipe)
         }
     }
+
+    private func toggleFavorite(_ recipe: Recipe) {
+        recipe.isFavorite.toggle()
+        try? modelContext.save()
+        
+        // Haptic feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
 }
 
 // MARK: - Supporting Views
-
-struct RecipeRow: View {
-    let recipe: Recipe
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Thumbnail
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.gray.opacity(0.2))
-                .frame(width: 60, height: 60)
-                .overlay {
-                    Image(systemName: "fork.knife")
-                        .foregroundColor(.gray.opacity(0.5))
-                }
-
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(recipe.title)
-                    .font(.headline)
-                    .lineLimit(1)
-
-                HStack(spacing: 8) {
-                    Label("\(recipe.totalTime)m", systemImage: "clock")
-                    Label(recipe.difficulty.rawValue, systemImage: "chart.bar")
-                    if recipe.isFavorite {
-                        Image(systemName: "heart.fill")
-                            .foregroundColor(.red)
-                    }
-                }
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-                if !recipe.tags.isEmpty {
-                    Text(recipe.tags.prefix(3).joined(separator: " • "))
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .padding(.vertical, 4)
-    }
-}
 
 struct FilterChip: View {
     let title: String
@@ -231,7 +213,7 @@ struct FilterChip: View {
                 .foregroundColor(isSelected ? .white : .primary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.blue : Color.gray.opacity(0.1))
+                .background(isSelected ? Theme.primary : Color.gray.opacity(0.1))
                 .cornerRadius(20)
         }
     }

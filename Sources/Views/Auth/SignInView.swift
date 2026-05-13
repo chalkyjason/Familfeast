@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import OSLog
 
 struct SignInView: View {
 
@@ -21,24 +22,23 @@ struct SignInView: View {
             // App icon and branding
             Image(systemName: "fork.knife.circle.fill")
                 .font(.system(size: 100))
-                .foregroundStyle(.blue.gradient)
+                .foregroundStyle(Theme.primary.gradient)
 
-            Text("FamilyFeast")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+            Text("MealMeld")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
 
             Text("Collaborative meal planning\nfor the whole family")
-                .font(.title3)
+                .font(.system(.title3, design: .rounded))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             Spacer()
 
             // Feature highlights
-            VStack(alignment: .leading, spacing: 14) {
-                HighlightRow(icon: "person.3.fill", text: "Vote on meals as a family")
+            VStack(alignment: .leading, spacing: 18) {
+                HighlightRow(icon: "hand.thumbsup.fill", text: "Vote on meals as a family")
                 HighlightRow(icon: "cart.fill", text: "Smart shopping lists")
-                HighlightRow(icon: "icloud.fill", text: "Syncs across all your devices")
+                HighlightRow(icon: "sparkles", text: "AI-powered recipe suggestions")
             }
             .padding(.horizontal, 32)
 
@@ -54,6 +54,8 @@ struct SignInView: View {
                 Text(errorMessage)
                     .font(.caption)
                     .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
             }
 
             Spacer()
@@ -74,10 +76,10 @@ struct SignInView: View {
             authService.handleSignInResult(result)
         case .failure(let error):
             if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
-                // User cancelled, don't show error
                 return
             }
-            errorMessage = "Sign in failed. Please try again."
+            Logger.auth.error("Sign in with Apple failed: \(error.localizedDescription)")
+            errorMessage = "Sign in failed: \(error.localizedDescription)"
             authService.handleSignInResult(result)
         }
     }
@@ -90,13 +92,13 @@ private struct HighlightRow: View {
     let text: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(.blue)
-                .frame(width: 30)
+                .font(.title2)
+                .foregroundStyle(Theme.primary)
+                .frame(width: 32)
             Text(text)
-                .font(.body)
+                .font(.system(.body, design: .rounded))
         }
     }
 }

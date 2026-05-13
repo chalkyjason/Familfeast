@@ -1,8 +1,8 @@
-# FamilyFeast
+# MealMeld
 
 **A Consensus-Driven Meal Planning Platform for iOS**
 
-FamilyFeast solves the age-old question "What's for dinner?" by transforming meal planning from a one-person chore into a collaborative family activity. Using democratic voting, AI-powered suggestions, and seamless CloudKit synchronization, FamilyFeast makes meal planning fun, fair, and efficient.
+MealMeld solves the age-old question "What's for dinner?" by transforming meal planning from a one-person chore into a collaborative family activity. Using democratic voting, AI-powered suggestions, and seamless CloudKit synchronization, MealMeld makes meal planning fun, fair, and efficient.
 
 ![iOS](https://img.shields.io/badge/iOS-17.0+-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
@@ -70,10 +70,10 @@ FamilyFeast solves the age-old question "What's for dinner?" by transforming mea
 ### Project Structure
 
 ```
-FamilyFeast/
+MealMeld/
 ├── Sources/
 │   ├── App/
-│   │   └── FamilyFeastApp.swift          # Main app entry point
+│   │   └── MealMeldApp.swift          # Main app entry point
 │   ├── Models/                            # SwiftData models
 │   │   ├── FamilyGroup.swift             # Family container + FamilyMember
 │   │   ├── Recipe.swift                  # Recipe entity + NutritionInfo
@@ -109,7 +109,7 @@ FamilyFeast/
 │   │   └── SpoonacularService.swift      # Recipe API
 │   └── Utilities/
 │       └── VotingAlgorithm.swift         # Consensus algorithms
-├── FamilyFeast.entitlements              # CloudKit entitlements
+├── MealMeld.entitlements              # CloudKit entitlements
 ├── project.yml                           # XcodeGen project spec
 └── Tests/
     └── VotingAlgorithmTests.swift        # Unit tests
@@ -135,17 +135,17 @@ FamilyFeast/
 
 2. **Open in Xcode**
    ```bash
-   open FamilyFeast.xcodeproj
+   open MealMeld.xcodeproj
    ```
    The Xcode project is included in the repo. Just open it and build.
 
    > **Regenerating the project** (optional): If you modify `project.yml`, install [XcodeGen](https://github.com/yonaskolb/XcodeGen) and run `xcodegen generate`.
 
 3. **Configure Signing**
-   - In Xcode, select the FamilyFeast target
+   - In Xcode, select the MealMeld target
    - Go to "Signing & Capabilities"
    - Select your development team
-   - CloudKit entitlements are already configured in `FamilyFeast.entitlements`
+   - CloudKit entitlements are already configured in `MealMeld.entitlements`
 
 4. **Set up API Keys** (optional)
 
@@ -188,7 +188,7 @@ FamilyFeast/
 Cmd+U
 
 # Via command line (requires xcodebuild)
-xcodebuild test -project FamilyFeast.xcodeproj -scheme FamilyFeast -destination 'platform=iOS Simulator,name=iPhone 16'
+xcodebuild test -project MealMeld.xcodeproj -scheme MealMeld -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
 ### Test Coverage
@@ -200,7 +200,7 @@ xcodebuild test -project FamilyFeast.xcodeproj -scheme FamilyFeast -destination 
 
 ## Voting Algorithm
 
-FamilyFeast uses a **Modified Borda Count** system to achieve consensus:
+MealMeld uses a **Modified Borda Count** system to achieve consensus:
 
 ### Vote Values
 - **Super Like**: +2 points

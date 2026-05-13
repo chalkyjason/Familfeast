@@ -29,6 +29,7 @@ struct StatusBadge: View {
 
 struct ScheduledMealRow: View {
     let meal: ScheduledMeal
+    var isDraggable: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -64,6 +65,12 @@ struct ScheduledMealRow: View {
                     }
 
                     Spacer()
+
+                    if isDraggable {
+                        Image(systemName: "line.3.horizontal")
+                            .foregroundColor(.secondary)
+                            .padding(.trailing, 4)
+                    }
                 }
             } else {
                 Text("No recipe assigned")
@@ -74,6 +81,73 @@ struct ScheduledMealRow: View {
         .padding()
         .background(.gray.opacity(0.05))
         .cornerRadius(12)
+        .if(isDraggable) { view in
+            view.draggable(meal.id.uuidString)
+        }
+    }
+}
+
+/// A drop target for a specific date in the calendar
+struct DayDropTarget: View {
+    let date: Date
+    let meal: ScheduledMeal?
+    let onDrop: (String) -> Void // Callback with meal ID string
+
+    @State private var isTargeted = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(date.formatted(.dateTime.weekday(.wide)))
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                Text(date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+            }
+
+            if let meal = meal {
+                ScheduledMealRow(meal: meal, isDraggable: true)
+            } else {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(isTargeted ? Color.blue : Color.gray.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [5]))
+                    .frame(height: 80)
+                    .overlay {
+                        VStack {
+                            Image(systemName: "plus.circle")
+                                .foregroundColor(.secondary)
+                            Text("Drop meal here")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+            }
+        }
+        .padding(8)
+        .background(isTargeted ? Color.blue.opacity(0.05) : Color.clear)
+        .cornerRadius(16)
+        .dropDestination(for: String.self) { items, location in
+            if let first = items.first {
+                onDrop(first)
+                return true
+            }
+            return false
+        } isTargeted: { targeted in
+            isTargeted = targeted
+        }
+    }
+}
+
+// Simple helper for conditional modifiers
+extension View {
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }
 

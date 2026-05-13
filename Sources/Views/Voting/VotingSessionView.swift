@@ -30,7 +30,7 @@ struct VotingSessionView: View {
         ZStack {
             // Background gradient
             LinearGradient(
-                colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
+                colors: [Theme.primary.opacity(0.1), Theme.secondary.opacity(0.1)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -43,7 +43,7 @@ struct VotingSessionView: View {
                 // Progress bar
                 ProgressView(value: votingProgress, total: 1.0)
                     .padding(.horizontal)
-                    .tint(.blue)
+                    .tint(Theme.primary)
 
                 Spacer()
 

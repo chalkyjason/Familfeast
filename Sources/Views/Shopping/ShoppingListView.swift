@@ -23,6 +23,9 @@ struct ShoppingListView: View {
 
     @State private var selectedList: ShoppingList?
     @State private var showingNewList = false
+    @State private var newItemName = ""
+    @State private var activeError: AppError?
+    @State private var showCheckedItems = true
 
     // MARK: - Body
 
@@ -42,8 +45,16 @@ struct ShoppingListView: View {
         .navigationTitle("Shopping List")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingNewList = true }) {
-                    Image(systemName: "plus")
+                HStack {
+                    if let list = selectedList, let items = list.items, items.contains(where: { $0.isChecked }) {
+                        Button(action: { clearCompleted(list) }) {
+                            Image(systemName: "trash")
+                        }
+                    }
+                    
+                    Button(action: { showingNewList = true }) {
+                        Image(systemName: "plus.rectangle.on.rectangle")
+                    }
                 }
             }
         }
@@ -66,7 +77,8 @@ struct ShoppingListView: View {
             }
         }
         .pickerStyle(.menu)
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 8)
         .background(.regularMaterial)
     }
 
@@ -74,15 +86,42 @@ struct ShoppingListView: View {
         VStack(spacing: 0) {
             // List header with stats
             listHeaderCard(list)
+                .padding()
+
+            // Quick add field
+            quickAddSection(list)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
 
             // Items by category
             if let items = list.items, !items.isEmpty {
-                categorizedItemsList(items)
+                categorizedItemsList(list, items: items)
             } else {
+                Spacer()
                 Text("No items in this list")
                     .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Spacer()
             }
+        }
+    }
+
+    private func quickAddSection(_ list: ShoppingList) -> some View {
+        HStack {
+            TextField("Add item (e.g. Milk)", text: $newItemName)
+                .textFieldStyle(.plain)
+                .padding(12)
+                .background(Theme.cardBackground)
+                .cornerRadius(10)
+                .onSubmit {
+                    addItem(to: list)
+                }
+
+            Button(action: { addItem(to: list) }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(Theme.primary)
+            }
+            .disabled(newItemName.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
 
@@ -99,11 +138,11 @@ struct ShoppingListView: View {
 
                     Text("\(Int(list.completionPercentage()))%")
                         .font(.headline)
-                        .foregroundColor(.orange)
+                        .foregroundColor(Theme.primary)
                 }
 
                 ProgressView(value: list.completionPercentage() / 100.0)
-                    .tint(.orange)
+                    .tint(Theme.primary)
             }
 
             // Cost info
@@ -137,25 +176,26 @@ struct ShoppingListView: View {
             // Complete button
             if !list.isComplete {
                 Button(action: { completeList(list) }) {
-                    Text("Mark All Complete")
+                    Text("Archive List")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(.orange.gradient)
+                        .background(Theme.primary.gradient)
                         .cornerRadius(12)
                 }
             }
         }
-        .padding()
-        .background(.white)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardStyle()
     }
 
-    private func categorizedItemsList(_ items: [ShoppingListItem]) -> some View {
+    private func categorizedItemsList(_ list: ShoppingList, items: [ShoppingListItem]) -> some View {
         List {
-            // Group items by category
-            let grouped = Dictionary(grouping: items) { $0.category }
+            let uncheckedItems = items.filter { !$0.isChecked }
+            let checkedItems = items.filter { $0.isChecked }
+
+            // Group unchecked items by category
+            let grouped = Dictionary(grouping: uncheckedItems) { $0.category }
             let sortedCategories = grouped.keys.sorted { $0.displayName < $1.displayName }
 
             ForEach(sortedCategories, id: \.self) { category in
@@ -164,13 +204,53 @@ struct ShoppingListView: View {
                         ShoppingListItemRow(item: item) {
                             toggleItem(item)
                         }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                deleteItem(item, from: list)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 } header: {
                     HStack {
                         Image(systemName: category.icon)
                         Text(category.displayName)
                     }
-                    .font(.headline)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(Theme.primary)
+                    .textCase(nil)
+                }
+            }
+
+            // Checked items section
+            if !checkedItems.isEmpty {
+                Section {
+                    if showCheckedItems {
+                        ForEach(checkedItems) { item in
+                            ShoppingListItemRow(item: item) {
+                                toggleItem(item)
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    deleteItem(item, from: list)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Button(action: { withAnimation { showCheckedItems.toggle() } }) {
+                        HStack {
+                            Text("Checked Items (\(checkedItems.count))")
+                            Spacer()
+                            Image(systemName: showCheckedItems ? "chevron.down" : "chevron.right")
+                        }
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(.secondary)
+                        .textCase(nil)
+                    }
                 }
             }
         }
@@ -196,6 +276,59 @@ struct ShoppingListView: View {
     }
 
     // MARK: - Methods
+
+    private func addItem(to list: ShoppingList) {
+        let name = newItemName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+
+        // Use the basic parser from Ingredient extension if available
+        let item: ShoppingListItem
+        if let parsed = Ingredient.parse(from: name) {
+            item = ShoppingListItem(
+                name: parsed.name,
+                quantity: parsed.quantity,
+                unit: parsed.unit,
+                category: parsed.category
+            )
+        } else {
+            item = ShoppingListItem(name: name, quantity: 1, unit: "unit")
+        }
+
+        item.shoppingList = list
+        modelContext.insert(item)
+        newItemName = ""
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to add item: \(error)")
+        }
+    }
+
+    private func deleteItem(_ item: ShoppingListItem, from list: ShoppingList) {
+        modelContext.delete(item)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to delete item: \(error)")
+        }
+    }
+
+    private func clearCompleted(_ list: ShoppingList) {
+        guard let items = list.items else { return }
+        let completed = items.filter { $0.isChecked }
+        
+        for item in completed {
+            modelContext.delete(item)
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to clear completed: \(error)")
+        }
+    }
 
     private func toggleItem(_ item: ShoppingListItem) {
         item.toggle()

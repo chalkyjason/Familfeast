@@ -2,15 +2,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "FamilyFeast",
+    name: "MealMeld",
     platforms: [
         .iOS(.v17),
         .macOS(.v14)
     ],
     products: [
         .library(
-            name: "FamilyFeast",
-            targets: ["FamilyFeast"]
+            name: "MealMeld",
+            targets: ["MealMeld"]
         )
     ],
     dependencies: [
@@ -18,13 +18,13 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "FamilyFeast",
+            name: "MealMeld",
             dependencies: [],
             path: "Sources"
         ),
         .testTarget(
-            name: "FamilyFeastTests",
-            dependencies: ["FamilyFeast"],
+            name: "MealMeldTests",
+            dependencies: ["MealMeld"],
             path: "Tests"
         )
     ]

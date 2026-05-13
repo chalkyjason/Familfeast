@@ -199,17 +199,65 @@ struct MealPlanningView: View {
             Text("This Week's Schedule")
                 .font(.headline)
 
-            if let scheduledMeals = session.scheduledMeals {
-                ForEach(scheduledMeals) { meal in
-                    ScheduledMealRow(meal: meal)
+            let days = generateDays(for: session)
+
+            ForEach(days, id: \.self) { date in
+                DayDropTarget(date: date, meal: mealForDate(date, in: session)) { mealID in
+                    moveMeal(mealID, to: date, in: session)
                 }
-            } else {
-                Text("No meals scheduled yet")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
         }
         .cardStyle()
+    }
+
+    // MARK: - Helper Methods
+
+    private func generateDays(for session: MealSession) -> [Date] {
+        var days: [Date] = []
+        let calendar = Calendar.current
+
+        // Normalize start and end dates to beginning of day
+        let start = calendar.startOfDay(for: session.startDate)
+        let end = calendar.startOfDay(for: session.endDate)
+
+        var current = start
+        while current <= end {
+            days.append(current)
+            guard let next = calendar.date(byAdding: .day, value: 1, to: current) else { break }
+            current = next
+        }
+
+        return days
+    }
+
+    private func mealForDate(_ date: Date, in session: MealSession) -> ScheduledMeal? {
+        let calendar = Calendar.current
+        return session.scheduledMeals?.first { meal in
+            calendar.isDate(meal.scheduledDate, inSameDayAs: date)
+        }
+    }
+
+    private func moveMeal(_ mealID: String, to newDate: Date, in session: MealSession) {
+        guard let uuid = UUID(uuidString: mealID),
+              let meal = session.scheduledMeals?.first(where: { $0.id == uuid }) else {
+            return
+        }
+
+        // If there's already a meal on the new date, we might want to swap them
+        // For simplicity now, we just move the dragged one
+        // and if there was one there, it will just be "covered" or we can handle it
+        if let existingMeal = mealForDate(newDate, in: session), existingMeal.id != meal.id {
+            // Swap dates
+            existingMeal.scheduledDate = meal.scheduledDate
+        }
+
+        meal.scheduledDate = newDate
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to move meal: \(error)")
+        }
     }
 
     private func candidateRecipesSection(_ session: MealSession) -> some View {

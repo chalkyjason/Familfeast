@@ -8,6 +8,7 @@ struct FamilySettingsView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.cloudKitService) private var cloudKitService
+    @Environment(\.authService) private var authService
 
     // MARK: - Properties
 
@@ -203,11 +204,11 @@ struct FamilySettingsView: View {
                     .foregroundColor(.secondary)
             }
 
-            Link(destination: URL(string: "https://familyfeast.app/privacy")!) {
+            Link(destination: URL(string: "https://mealmeld.app/privacy")!) {
                 Label("Privacy Policy", systemImage: "hand.raised")
             }
 
-            Link(destination: URL(string: "https://familyfeast.app/terms")!) {
+            Link(destination: URL(string: "https://mealmeld.app/terms")!) {
                 Label("Terms of Service", systemImage: "doc.text")
             }
 
@@ -215,6 +216,12 @@ struct FamilySettingsView: View {
                 Label("Send Feedback", systemImage: "envelope")
             }
             .disabled(true)
+
+            Button(role: .destructive, action: {
+                authService.signOut()
+            }) {
+                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+            }
         }
     }
 

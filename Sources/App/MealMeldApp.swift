@@ -1,8 +1,9 @@
 import SwiftUI
 import SwiftData
+import OSLog
 
 @main
-struct FamilyFeastApp: App {
+struct MealMeldApp: App {
 
     // MARK: - Properties
 
@@ -12,12 +13,27 @@ struct FamilyFeastApp: App {
     /// Services
     @State private var aiService: AIService?
     @State private var cloudKitService: CloudKitService
+    @State private var authService: AuthenticationService
 
     // MARK: - Initialization
 
     init() {
-        // Initialize CloudKit service
-        cloudKitService = CloudKitService()
+        Logger.app.info("Application starting up...")
+        
+        // Initialize services
+        let ckService = CloudKitService()
+        cloudKitService = ckService
+        authService = AuthenticationService()
+        
+        // Activate CloudKit with configured container
+        Task {
+            await ckService.activateCloudKit()
+        }
+        
+        // Initialize AI service
+        aiService = AIService()
+        
+        Logger.app.info("Services initialized.")
 
         // Configure SwiftData model container
         do {
@@ -46,24 +62,11 @@ struct FamilyFeastApp: App {
                 configurations: [configuration]
             )
 
-            print("✅ SwiftData container initialized successfully")
+            Logger.database.info("SwiftData container initialized successfully")
 
         } catch {
+            Logger.database.fault("Failed to initialize SwiftData container: \(error.localizedDescription)")
             fatalError("Failed to initialize SwiftData container: \(error)")
-        }
-
-        // Configure AI service
-        #if DEBUG
-        let openAIKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
-        #else
-        let openAIKey = "" // Load from keychain or secure storage
-        #endif
-
-        if !openAIKey.isEmpty {
-            aiService = AIService(apiKey: openAIKey)
-            print("✅ AI Service configured")
-        } else {
-            print("⚠️ OpenAI API key not found")
         }
     }
 
@@ -75,6 +78,7 @@ struct FamilyFeastApp: App {
                 .modelContainer(modelContainer)
                 .environment(\.cloudKitService, cloudKitService)
                 .environment(\.aiService, aiService)
+                .environment(\.authService, authService)
         }
     }
 
@@ -92,6 +96,11 @@ private struct AIServiceKey: EnvironmentKey {
     static let defaultValue: AIService? = nil
 }
 
+/// Environment key for Authentication service
+private struct AuthenticationServiceKey: EnvironmentKey {
+    static let defaultValue: AuthenticationService = AuthenticationService()
+}
+
 extension EnvironmentValues {
     var cloudKitService: CloudKitService {
         get { self[CloudKitServiceKey.self] }
@@ -101,5 +110,10 @@ extension EnvironmentValues {
     var aiService: AIService? {
         get { self[AIServiceKey.self] }
         set { self[AIServiceKey.self] = newValue }
+    }
+
+    var authService: AuthenticationService {
+        get { self[AuthenticationServiceKey.self] }
+        set { self[AuthenticationServiceKey.self] = newValue }
     }
 }

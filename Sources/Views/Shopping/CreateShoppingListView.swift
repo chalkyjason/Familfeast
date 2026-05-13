@@ -26,14 +26,26 @@ struct CreateShoppingListView: View {
                 }
 
                 Section("Generate From") {
-                    Button("Current Meal Plan") {
-                        createFromMealPlan()
+                    Button(action: createFromMealPlan) {
+                        HStack {
+                            Text("Current Meal Plan")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Image(systemName: "wand.and.stars")
+                        }
                     }
+                    .foregroundColor(Theme.primary)
                     .disabled(finalizedSessions.isEmpty)
 
-                    Button("Start Empty") {
-                        createEmptyList()
+                    Button(action: createEmptyList) {
+                        HStack {
+                            Text("Start Empty")
+                                .fontWeight(.medium)
+                            Spacer()
+                            Image(systemName: "plus.circle")
+                        }
                     }
+                    .foregroundColor(Theme.secondary)
                 }
             }
             .navigationTitle("New Shopping List")

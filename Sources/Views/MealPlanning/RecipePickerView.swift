@@ -19,11 +19,12 @@ struct RecipePickerView: View {
             List(filteredRecipes) { recipe in
                 Button(action: { toggleRecipe(recipe) }) {
                     HStack {
-                        RecipeRow(recipe: recipe)
-                        Spacer()
+                        RecipeRowView(recipe: recipe)
+                        
                         if selectedRecipeIDs.contains(recipe.id) {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(Theme.primary)
+                                .font(.title3)
                         }
                     }
                 }

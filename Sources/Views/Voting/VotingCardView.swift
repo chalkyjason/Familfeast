@@ -67,8 +67,8 @@ struct VotingCardView: View {
                                         .font(.caption)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
-                                        .background(.blue.opacity(0.1))
-                                        .foregroundColor(.blue)
+                                        .background(Theme.primary.opacity(0.1))
+                                        .foregroundColor(Theme.primary)
                                         .cornerRadius(12)
                                 }
                             }
@@ -133,7 +133,7 @@ struct VotingCardView: View {
     private var placeholderImage: some View {
         ZStack {
             LinearGradient(
-                colors: [.blue.opacity(0.6), .purple.opacity(0.6)],
+                colors: [Theme.primary.opacity(0.6), Theme.secondary.opacity(0.6)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

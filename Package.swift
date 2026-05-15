@@ -13,14 +13,32 @@ let package = Package(
             targets: ["MealMeld"]
         )
     ],
-    dependencies: [
-        // Add external dependencies here if needed
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "MealMeld",
             dependencies: [],
-            path: "Sources"
+            path: "Sources",
+            exclude: [
+                "App",
+                "Assets.xcassets",
+                "Models/AppError.swift",
+                "Services",
+                "Utilities/CurrencyFormatter.swift",
+                "Utilities/Config.swift",
+                "Utilities/Logger+Extension.swift",
+                "Utilities/Theme.swift",
+                "Views"
+            ],
+            sources: [
+                "Models/FamilyGroup.swift",
+                "Models/Ingredient.swift",
+                "Models/MealSession.swift",
+                "Models/Recipe.swift",
+                "Models/ShoppingList.swift",
+                "Models/Vote.swift",
+                "Utilities/VotingAlgorithm.swift"
+            ]
         ),
         .testTarget(
             name: "MealMeldTests",

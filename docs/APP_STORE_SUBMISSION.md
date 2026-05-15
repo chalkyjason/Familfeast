@@ -31,17 +31,15 @@ unrestricted_web: no
 ### English (en-US)
 
 description: |
-  MealMeld transforms meal planning from a solo chore into a fun, collaborative family activity. Stop arguing about what's for dinner and start voting on it.
+  MealMeld turns "What's for dinner?" from a solo chore into a family vote. Stop arguing about meals and start agreeing on them.
 
-  Every family member gets a voice with our democratic voting system. Swipe right on meals you love, left on ones you don't, and let the Borda Count consensus algorithm pick dishes that make everyone happy -- no more one person deciding for the whole family.
+  Every family member gets a voice. Swipe right on meals you love, left on ones you don't, and let the Borda Count consensus algorithm pick dishes that make everyone happy -- no more one person deciding for the whole family.
 
   Key Features:
 
   - Democratic Voting: Tinder-style swipe interface lets every family member weigh in. The consensus algorithm finds meals everyone can agree on, avoiding polarizing choices.
 
-  - Real-Time Sync: CloudKit keeps your recipes, votes, and meal plans in sync across all family devices. Changes appear instantly for everyone.
-
-  - Smart Shopping Lists: Automatically generated from your finalized meal plans, organized by grocery aisle. Track your budget and check items off collaboratively.
+  - Smart Shopping Lists: Automatically generated from your finalized meal plans, organized by grocery aisle. Track your budget and check items off as you shop.
 
   - Recipe Scaling & Cooking Mode: Adjust servings up or down and follow step-by-step cooking instructions with built-in countdown timers. View nutrition info including calories, protein, carbs, fat, fiber, and sodium.
 
@@ -51,9 +49,9 @@ description: |
 
   - Budget Management: Estimate costs per recipe and per meal plan, track actual spending versus estimates, and get alerts when you're approaching your limit.
 
-  MealMeld is built with privacy in mind. All data is stored locally first, with optional iCloud sync using Apple's end-to-end encryption. No accounts to create, no tracking, no ads.
+  MealMeld is privacy-first. All data is stored locally on your device. No accounts to create, no tracking, no ads. Sign in with Apple is optional and only stores an Apple-issued ID and display name on-device.
 
-keywords: meal planning,family,recipes,voting,shopping list,dinner,cooking,weekly meals,diet,CloudKit
+keywords: meal planning,family,recipes,voting,shopping list,dinner,cooking,weekly meals,diet,budget
 whats_new: Initial release.
 promo_text: Turn "What's for dinner?" into a family vote. Plan meals together, shop smarter, and cook with confidence.
 support_url: https://chalkyjason.github.io/MyWebsite/projects/mealmeld/support
@@ -79,17 +77,16 @@ last_name: chalkyjason
 phone: +1 (234) 228-5103
 email: chalkyjason@gmail.com
 notes: |
-  MealMeld is a meal planning app for families. To test the core flow:
-  1. Launch the app and complete onboarding (name your family group).
-  2. Add a few recipes manually from the Recipes tab.
-  3. Create a voting session from the Meal Planning tab.
-  4. Swipe to vote on recipes.
-  5. View the consensus results and schedule meals.
-  6. Generate a shopping list from a finalized meal plan.
+  MealMeld is a local-first meal planning app for families. To test the core flow:
+  1. Launch the app. Sign in with Apple is offered but optional -- you can skip it and use the app fully.
+  2. Complete onboarding (name your family group).
+  3. Add a few recipes manually from the Recipes tab.
+  4. Create a voting session from the Meal Planning tab.
+  5. Swipe to vote on recipes.
+  6. View the consensus results and schedule meals.
+  7. Generate a shopping list from a finalized meal plan.
 
-  CloudKit sync requires iCloud sign-in. The app works fully in local-only mode on simulator or without iCloud.
-
-  No login required. No third-party accounts. Uses iCloud identity for multi-user sync.
+  All data is stored locally on-device with SwiftData. There is no server, no third-party account, and no analytics SDK.
 
 ## Pricing
 

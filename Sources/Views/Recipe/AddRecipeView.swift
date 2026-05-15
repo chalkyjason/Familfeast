@@ -3,7 +3,6 @@ import SwiftData
 
 struct AddRecipeView: View {
     let familyGroup: FamilyGroup?
-    var suggestion: RecipeSuggestion? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -113,29 +112,6 @@ struct AddRecipeView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { saveRecipe() }
                         .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .onAppear {
-                if let s = suggestion {
-                    title = s.title
-                    recipeDescription = s.description
-                    cuisine = s.cuisine
-                    prepTime = s.prepTime
-                    cookTime = s.cookTime
-                    servings = s.servings
-                    instructions = s.instructions
-                    ingredientLines = s.ingredients.map { ing in
-                        let qty = ing.quantity.truncatingRemainder(dividingBy: 1) == 0
-                            ? String(format: "%.0f", ing.quantity)
-                            : String(format: "%.2f", ing.quantity)
-                        return "\(qty) \(ing.unit) \(ing.name)"
-                    }
-                    if ingredientLines.isEmpty { ingredientLines = [""] }
-                    switch s.difficulty.lowercased() {
-                    case "easy": difficulty = .easy
-                    case "hard": difficulty = .hard
-                    default: difficulty = .medium
-                    }
                 }
             }
         }

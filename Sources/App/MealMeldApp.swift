@@ -7,11 +7,11 @@ struct MealMeldApp: App {
 
     // MARK: - Properties
 
-    /// SwiftData model container with CloudKit sync
-    let modelContainer: ModelContainer
+    /// SwiftData model container (local-only)
+    let modelContainer: ModelContainer?
+    let modelContainerError: Error?
 
     /// Services
-    @State private var aiService: AIService?
     @State private var cloudKitService: CloudKitService
     @State private var authService: AuthenticationService
 
@@ -19,54 +19,43 @@ struct MealMeldApp: App {
 
     init() {
         Logger.app.info("Application starting up...")
-        
-        // Initialize services
+
         let ckService = CloudKitService()
         cloudKitService = ckService
         authService = AuthenticationService()
-        
-        // Activate CloudKit with configured container
+
         Task {
             await ckService.activateCloudKit()
         }
-        
-        // Initialize AI service
-        aiService = AIService()
-        
+
         Logger.app.info("Services initialized.")
 
-        // Configure SwiftData model container
+        let schema = Schema([
+            FamilyGroup.self,
+            FamilyMember.self,
+            Recipe.self,
+            Ingredient.self,
+            Vote.self,
+            MealSession.self,
+            ScheduledMeal.self,
+            ShoppingList.self,
+            ShoppingListItem.self
+        ])
+
+        let configuration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            cloudKitDatabase: .none
+        )
+
         do {
-            // Define the schema
-            let schema = Schema([
-                FamilyGroup.self,
-                FamilyMember.self,
-                Recipe.self,
-                Ingredient.self,
-                Vote.self,
-                MealSession.self,
-                ScheduledMeal.self,
-                ShoppingList.self,
-                ShoppingListItem.self
-            ])
-
-            // Configure model container with CloudKit sync
-            let configuration = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: false,
-                cloudKitDatabase: .none
-            )
-
-            modelContainer = try ModelContainer(
-                for: schema,
-                configurations: [configuration]
-            )
-
+            modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+            modelContainerError = nil
             Logger.database.info("SwiftData container initialized successfully")
-
         } catch {
+            modelContainer = nil
+            modelContainerError = error
             Logger.database.fault("Failed to initialize SwiftData container: \(error.localizedDescription)")
-            fatalError("Failed to initialize SwiftData container: \(error)")
         }
     }
 
@@ -74,11 +63,14 @@ struct MealMeldApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .modelContainer(modelContainer)
-                .environment(\.cloudKitService, cloudKitService)
-                .environment(\.aiService, aiService)
-                .environment(\.authService, authService)
+            if let container = modelContainer {
+                ContentView()
+                    .modelContainer(container)
+                    .environment(\.cloudKitService, cloudKitService)
+                    .environment(\.authService, authService)
+            } else {
+                StorageUnavailableView(error: modelContainerError)
+            }
         }
     }
 
@@ -89,11 +81,6 @@ struct MealMeldApp: App {
 /// Environment key for CloudKit service
 private struct CloudKitServiceKey: EnvironmentKey {
     static let defaultValue: CloudKitService = CloudKitService()
-}
-
-/// Environment key for AI service
-private struct AIServiceKey: EnvironmentKey {
-    static let defaultValue: AIService? = nil
 }
 
 /// Environment key for Authentication service
@@ -107,13 +94,34 @@ extension EnvironmentValues {
         set { self[CloudKitServiceKey.self] = newValue }
     }
 
-    var aiService: AIService? {
-        get { self[AIServiceKey.self] }
-        set { self[AIServiceKey.self] = newValue }
-    }
-
     var authService: AuthenticationService {
         get { self[AuthenticationServiceKey.self] }
         set { self[AuthenticationServiceKey.self] = newValue }
+    }
+}
+
+private struct StorageUnavailableView: View {
+    let error: Error?
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .font(.system(size: 56))
+                .foregroundStyle(.tint)
+            Text("MealMeld can't open its local database")
+                .font(.title2)
+                .multilineTextAlignment(.center)
+            Text("Reinstalling the app usually resolves this. Your data is stored only on this device.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            if let error {
+                Text(error.localizedDescription)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(32)
     }
 }

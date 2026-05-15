@@ -195,16 +195,25 @@ struct CookingModeView: View {
     // MARK: - Methods
 
     private func parseSteps(from instructions: String) -> [String] {
-        // Try numbered pattern first: "1. Step" or "1: Step"
-        let numberedPattern = #"\d+[.:]\s+"#
-        if let regex = try? NSRegularExpression(pattern: numberedPattern),
-           regex.numberOfMatches(in: instructions, range: NSRange(instructions.startIndex..., in: instructions)) >= 2 {
-            let parts = instructions.components(separatedBy: try! NSRegularExpression(pattern: #"\n?\d+[.:]\s+"#))
-            let filtered = parts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-            if !filtered.isEmpty { return filtered }
+        if let splitRegex = try? NSRegularExpression(pattern: #"\n?\d+[.:]\s+"#) {
+            let nsRange = NSRange(instructions.startIndex..., in: instructions)
+            let matches = splitRegex.matches(in: instructions, range: nsRange)
+            if matches.count >= 2 {
+                var parts: [String] = []
+                var cursor = instructions.startIndex
+                for match in matches {
+                    guard let range = Range(match.range, in: instructions) else { continue }
+                    parts.append(String(instructions[cursor..<range.lowerBound]))
+                    cursor = range.upperBound
+                }
+                parts.append(String(instructions[cursor...]))
+                let filtered = parts
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                if !filtered.isEmpty { return filtered }
+            }
         }
 
-        // Fall back to splitting by newlines
         let lines = instructions.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }

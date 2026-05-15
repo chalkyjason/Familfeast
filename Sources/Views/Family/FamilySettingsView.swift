@@ -40,7 +40,10 @@ struct FamilySettingsView: View {
                 aboutSection
             }
             .navigationTitle("Family Settings")
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            .alert("Error", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
                 Button("OK") {
                     errorMessage = nil
                 }
@@ -322,7 +325,6 @@ struct InviteFamilyMemberView: View {
     let familyGroup: FamilyGroup?
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.cloudKitService) private var cloudKitService
 
     @State private var email = ""
     @State private var displayName = ""
@@ -367,7 +369,10 @@ struct InviteFamilyMemberView: View {
                     Button("Cancel") { dismiss() }
                 }
             }
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            .alert("Error", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
                 Button("OK") {
                     errorMessage = nil
                 }
@@ -378,20 +383,7 @@ struct InviteFamilyMemberView: View {
     }
 
     private func sendInvite() {
-        isLoading = true
-
-        Task {
-            // In a real implementation, this would:
-            // 1. Create a CKShare
-            // 2. Add the participant
-            // 3. Send the invitation via CloudKit
-
-            // For now, just show success
-            await MainActor.run {
-                isLoading = false
-                dismiss()
-            }
-        }
+        errorMessage = "Family invitations aren't available in this version. No invitation was sent."
     }
 }
 

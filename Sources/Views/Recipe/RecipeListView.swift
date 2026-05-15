@@ -20,8 +20,6 @@ struct RecipeListView: View {
     @State private var searchText = ""
     @State private var selectedFilter: RecipeFilter = .all
     @State private var showingAddRecipe = false
-    @State private var showingAISuggestions = false
-    @State private var showingURLImport = false
 
     // MARK: - Body
 
@@ -44,31 +42,13 @@ struct RecipeListView: View {
             .navigationTitle("Recipes")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: { showingAddRecipe = true }) {
-                            Label("Manual Add", systemImage: "pencil")
-                        }
-                        
-                        Button(action: { showingAISuggestions = true }) {
-                            Label("AI Suggestions", systemImage: "sparkles")
-                        }
-                        
-                        Button(action: { showingURLImport = true }) {
-                            Label("Import URL", systemImage: "link")
-                        }
-                    } label: {
+                    Button(action: { showingAddRecipe = true }) {
                         Image(systemName: "plus")
                     }
                 }
             }
             .sheet(isPresented: $showingAddRecipe) {
                 AddRecipeView(familyGroup: familyGroup)
-            }
-            .sheet(isPresented: $showingAISuggestions) {
-                AISuggestionsView(familyGroup: familyGroup)
-            }
-            .sheet(isPresented: $showingURLImport) {
-                RecipeURLImportView(familyGroup: familyGroup)
             }
         }
     }

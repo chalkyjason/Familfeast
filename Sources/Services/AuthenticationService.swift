@@ -1,5 +1,6 @@
 import Foundation
 import AuthenticationServices
+import os
 
 @Observable
 final class AuthenticationService {
@@ -14,6 +15,10 @@ final class AuthenticationService {
     private let userIDKey = "appleUserID"
     private let displayNameKey = "appleDisplayName"
     private let emailKey = "appleEmail"
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.mealmeld.app",
+        category: "AuthenticationService"
+    )
 
     // MARK: - Initialization
 
@@ -47,7 +52,7 @@ final class AuthenticationService {
             save(userID: userID, displayName: name, email: email)
 
         case .failure(let error):
-            print("Sign in with Apple failed: \(error.localizedDescription)")
+            logger.error("Sign in with Apple failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -75,7 +80,7 @@ final class AuthenticationService {
                 }
             }
         } catch {
-            print("Credential state check failed: \(error.localizedDescription)")
+            logger.error("Credential state check failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 

@@ -1,0 +1,115 @@
+default_platform(:ios)
+
+REQUIRED_METADATA_FILES = %w[
+  description.txt
+  keywords.txt
+  marketing_url.txt
+  name.txt
+  privacy_url.txt
+  promotional_text.txt
+  release_notes.txt
+  subtitle.txt
+  support_url.txt
+].freeze
+
+private_lane :generate_metadata_files do
+  sh("ruby scripts/generate_fastlane_metadata.rb")
+end
+
+private_lane :require_env! do
+  %w[
+    APP_STORE_CONNECT_KEY_ID
+    APP_STORE_CONNECT_ISSUER_ID
+    APP_STORE_CONNECT_PRIVATE_KEY_PATH
+  ].each do |key|
+    UI.user_error!("Missing #{key}") if ENV[key].to_s.empty?
+  end
+
+  key_path = ENV.fetch("APP_STORE_CONNECT_PRIVATE_KEY_PATH")
+  UI.user_error!("Missing key file at #{key_path}") unless File.exist?(key_path)
+end
+
+private_lane :release_api_key do
+  app_store_connect_api_key(
+    key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
+    issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
+    key_filepath: ENV.fetch("APP_STORE_CONNECT_PRIVATE_KEY_PATH")
+  )
+end
+
+private_lane :verify_release_inputs! do
+  submission_doc = "docs/APP_STORE_SUBMISSION.md"
+  screenshots_dir = "docs/screenshots/appstore"
+  xcode_project = "MealMeld.xcodeproj/project.pbxproj"
+
+  UI.user_error!("Missing submission doc at #{submission_doc}") unless File.exist?(submission_doc)
+  UI.user_error!("Missing screenshot directory at #{screenshots_dir}") unless Dir.exist?(screenshots_dir)
+  UI.user_error!("Missing Xcode project at #{xcode_project}") unless File.exist?(xcode_project)
+
+  generate_metadata_files
+
+  missing_metadata_files = REQUIRED_METADATA_FILES.reject do |file_name|
+    File.exist?(File.join("fastlane", "metadata", "en-US", file_name))
+  end
+  UI.user_error!("Metadata generation missing files: #{missing_metadata_files.join(', ')}") unless missing_metadata_files.empty?
+end
+
+private_lane :verify_bundle_id! do
+  expected_bundle_id = "com.mealmeld.app"
+  submission_doc = File.read("docs/APP_STORE_SUBMISSION.md")
+  project_file = File.read("MealMeld.xcodeproj/project.pbxproj")
+  appfile = File.read("fastlane/Appfile")
+
+  UI.user_error!("Submission doc missing bundle_id: #{expected_bundle_id}") unless submission_doc.include?("bundle_id: #{expected_bundle_id}")
+  UI.user_error!("Xcode project missing bundle id #{expected_bundle_id}") unless project_file.include?(expected_bundle_id)
+  UI.user_error!("Appfile missing app_identifier(\"#{expected_bundle_id}\")") unless appfile.include?("app_identifier(\"#{expected_bundle_id}\")")
+end
+
+platform :ios do
+  desc "Validate local release inputs without mutating App Store Connect"
+  lane :validate do
+    require_env!
+    verify_release_inputs!
+    verify_bundle_id!
+  end
+
+  desc "Build and upload a TestFlight build without App Review submission"
+  lane :beta do
+    validate
+
+    api_key = release_api_key
+
+    build_app(
+      project: "MealMeld.xcodeproj",
+      scheme: "MealMeld",
+      export_method: "app-store"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+  end
+
+  desc "Upload metadata and screenshots without App Review submission"
+  lane :metadata_sync do
+    validate
+
+    api_key = release_api_key
+    metadata_path = "fastlane/metadata"
+    screenshots_path = "docs/screenshots/appstore"
+
+    upload_to_app_store(
+      api_key: api_key,
+      metadata_path: metadata_path,
+      screenshots_path: screenshots_path,
+      skip_binary_upload: true,
+      skip_metadata: false,
+      skip_screenshots: false,
+      submit_for_review: false,
+      automatic_release: false,
+      force: true
+    )
+  end
+end
